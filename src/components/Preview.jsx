@@ -4,9 +4,10 @@ const iconFor = (label) => (label === 'Population' ? Users : label === 'Budget p
 
 export default function Preview({ s }) {
   return (
+    <div className="@container">
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="bg-[#1a1a18] px-6 py-8 text-white">
-        <h1 className="text-2xl font-bold sm:text-3xl">{s.h1}</h1>
+        <h1 className="break-words text-2xl font-bold @min-[560px]:text-3xl">{s.h1}</h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-300">{s.intro}</p>
       </div>
 
@@ -33,7 +34,7 @@ export default function Preview({ s }) {
         {s.figures.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold">{s.figuresTitle}</h2>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-3 @min-[560px]:grid-cols-2">
             {s.figures.map((f) => {
               const Icon = iconFor(f.label)
               return (
@@ -53,7 +54,7 @@ export default function Preview({ s }) {
         <section>
           <h2 className="text-lg font-semibold">{s.localTitle}</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">{s.local}</p>
-          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <div className="mt-3 grid gap-3 @min-[560px]:grid-cols-2">
             {s.listings.map((l) => (
               <a
                 key={l.ref}
@@ -117,15 +118,16 @@ export default function Preview({ s }) {
           <h2 className="flex items-center gap-2 text-lg font-semibold text-indigo-900">
             <Phone size={18} /> {s.ctaTitle}
           </h2>
-          <form className="mt-3 grid gap-3 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
+          <form className="mt-3 grid gap-3 @min-[560px]:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
             <input className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm" placeholder="Nom" />
             <input className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm" placeholder="Téléphone" />
-            <input className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm sm:col-span-2" placeholder="E-mail" />
-            <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white sm:col-span-2">Demander à être rappelé</button>
+            <input className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm @min-[560px]:col-span-2" placeholder="E-mail" />
+            <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white @min-[560px]:col-span-2">Demander à être rappelé</button>
           </form>
           <p className="mt-2 text-xs text-indigo-700">{s.ctaNote}</p>
         </section>
       </div>
     </article>
+    </div>
   )
 }

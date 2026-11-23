@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff, Download } from 'lucide-react'
-import Preview from './Preview'
+import PreviewPane from './PreviewPane'
 import { fmtEur, fmtNum } from '../lib/data'
 import { fetchDvf, generate, cachedDvf, fetchPhotos, cachedPhotos } from '../lib/api'
 import { optimizeImage, download, seoFileName, formatKo } from '../lib/optimize'
@@ -404,8 +404,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
 
       {/* Colonne droite */}
       <div className="lg:sticky lg:top-4 lg:self-start">
-        <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Aperçu de la page</p>
-        <Preview s={sections} />
+        <PreviewPane name={c.name} s={sections} />
       </div>
     </div>
   )
