@@ -90,12 +90,15 @@ export default async function handler(req, res) {
   const geminiModels = [...new Set([process.env.GEMINI_MODEL, 'gemini-2.5-flash', ...(isVertex ? [] : ['gemini-flash-latest', 'gemini-2.0-flash'])].filter(Boolean))]
   const viaGemini = async () => {
     let last = 'gemini_error'
+    let lastDetail = {}
     for (const model of geminiModels) {
       const r = await geminiCall(model)
       if (r.ok) return geminiText(r)
-      console.error('Gemini API error:', r.status, await r.text())
+      const errText = await r.text()
+      console.error('Gemini API error:', r.status, errText)
       last = 'gemini_' + r.status
-      if (r.status !== 404) throw new Error(last)
+      lastDetail = { status: r.status, detail: errText }
+      if (r.status !== 404) throw Object.assign(new Error(last), lastDetail)
     }
     if (!isVertex) {
       // Aucun nom connu ne passe : on demande à Google la liste des modèles disponibles pour cette clé
@@ -109,18 +112,22 @@ export default async function handler(req, res) {
           for (const model of list.slice(0, 3)) {
             const r = await geminiCall(model)
             if (r.ok) return geminiText(r)
-            console.error('Gemini API error:', r.status, await r.text())
+            const errText = await r.text()
+            console.error('Gemini API error:', r.status, errText)
+            lastDetail = { status: r.status, detail: errText }
           }
           last = list.length ? 'gemini_404_aucun_modele_utilisable' : 'gemini_404_aucun_modele_flash'
         } else {
-          console.error('Gemini API error:', lr.status, await lr.text())
+          const errText = await lr.text()
+          console.error('Gemini API error:', lr.status, errText)
+          lastDetail = { status: lr.status, detail: errText }
           last = 'gemini_404_liste_' + lr.status
         }
       } catch {
         /* on garde last */
       }
     }
-    throw new Error(last)
+    throw Object.assign(new Error(last), lastDetail)
   }
 
   const viaAnthropic = async () => {
@@ -150,6 +157,7 @@ export default async function handler(req, res) {
 
   const providers = [geminiKey && viaGemini, anthropicKey && viaAnthropic].filter(Boolean)
   let lastError = 'generation_failed'
+  let lastInfo = {}
   for (const run of providers) {
     try {
       const text = await run()
@@ -164,7 +172,8 @@ export default async function handler(req, res) {
       })
     } catch (e) {
       lastError = String(e.message || 'generation_failed').slice(0, 40)
+      if (e.detail) lastInfo = { provider: 'gemini', status: e.status, detail: String(e.detail).replaceAll(geminiKey || '\0', '***').slice(0, 1500) }
     }
   }
-  return res.status(502).json({ error: lastError })
+  return res.status(502).json({ error: lastError, ...lastInfo })
 }

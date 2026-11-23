@@ -45,7 +45,7 @@ export async function generate(payload) {
   }
   if (res.ok && body?.page) return { page: body.page }
   if (res.status === 429) return { error: body?.message || 'Limite quotidienne atteinte.' }
-  return { fallback: true, reason: body?.error || 'unavailable' }
+  return { fallback: true, reason: body?.error || 'unavailable', status: body?.status, detail: body?.detail }
 }
 
 const IMG_KEY = 'cimco.img.v1'
