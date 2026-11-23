@@ -3,6 +3,7 @@
 // Secours : moyennes de référence enregistrées, uniquement si data.gouv.fr est injoignable ou vide.
 
 const SRC_GEODVF = 'DVF (DGFiP) via geo-dvf, data.gouv.fr'
+const MIN_VENTES = 5
 const SRC_SECOURS = 'Repère enregistré (secours, data.gouv.fr indisponible)'
 const TIMEOUT_MS = 5000
 
@@ -172,6 +173,13 @@ export default async function handler(req, res) {
   }
 
   const agg = aggregate(rows)
+  // Moyenne publiée seulement si l'échantillon est assez large
+  for (const k of ['terrain', 'maison']) if (agg[k] && agg[k].nb_transactions < MIN_VENTES) agg[k] = null
+  if (!agg.terrain && !agg.maison && SECOURS[code]) {
+    const { commune, ...r } = SECOURS[code]
+    log('info', 'echantillon_trop_faible', { code })
+    return res.status(200).json({ code_insee: code, source: SRC_SECOURS, terrain: null, maison: null, repere: r })
+  }
   log('info', 'aggregated', { code, rows: rows.length, mutations: agg.nb_mutations, terrain: agg.terrain?.nb_transactions ?? 0, maison: agg.maison?.nb_transactions ?? 0 })
 
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800')

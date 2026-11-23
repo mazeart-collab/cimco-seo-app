@@ -1,4 +1,4 @@
-const DVF_KEY = 'cimco.dvf.v3'
+const DVF_KEY = 'cimco.dvf.v4'
 const TTL = 7 * 24 * 3600 * 1000
 
 const readDvf = () => {
