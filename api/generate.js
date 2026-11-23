@@ -90,6 +90,36 @@ export default async function handler(req, res) {
       const j = await r.json()
       return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
     }
+    // Aucun nom connu ne passe : on demande à Google la liste des modèles disponibles pour cette clé
+    try {
+      const lr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}&pageSize=100`, { signal: AbortSignal.timeout(15000) })
+      if (lr.ok) {
+        const list = ((await lr.json()).models || [])
+          .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+          .map((m) => String(m.name).replace(/^models\//, ''))
+          .filter((n) => /flash/.test(n) && !/(image|tts|live|audio|thinking|lite)/.test(n) && !geminiModels.includes(n))
+        for (const model of list.slice(0, 3)) {
+          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              systemInstruction: { parts: [{ text: SYSTEM }] },
+              contents: [{ role: 'user', parts: [{ text: user }] }],
+              generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
+            }),
+            signal: AbortSignal.timeout(55000),
+          })
+          if (!r.ok) continue
+          const j = await r.json()
+          return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+        }
+        last = list.length ? 'gemini_404_aucun_modele_utilisable' : 'gemini_404_aucun_modele_flash'
+      } else {
+        last = 'gemini_404_liste_' + lr.status
+      }
+    } catch {
+      /* on garde last */
+    }
     throw new Error(last)
   }
 
