@@ -121,7 +121,13 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
       onStatus(c.name, 'traitee')
       setNotice({
         type: 'info',
-        text: "Mode de secours : la génération IA n'est pas disponible (clé API non configurée sur le serveur). La page affichée est construite à partir des données réelles, vos consignes n'ont pas été appliquées.",
+        text: `Mode de secours : ${
+          r.reason === 'no_key'
+            ? 'aucune clé API (GEMINI_API_KEY ou ANTHROPIC_API_KEY) détectée sur le serveur. Si elle vient d\'être ajoutée sur Vercel, redéployez le projet.'
+            : r.reason === 'unavailable'
+              ? "la fonction /api/generate est injoignable (normal en local, vérifiez le déploiement Vercel)."
+              : `l'appel à l'IA a échoué (${r.reason}).`
+        } La page affichée est construite à partir des données réelles, vos consignes n'ont pas été appliquées.`,
       })
     }
     setBusy(false)
