@@ -27,6 +27,7 @@ Règles strictes :
 - Utilise UNIQUEMENT les données fournies dans le JSON. N'invente aucun chiffre, prix, témoignage, nom de lieu ou fait sur la commune.
 - Tout chiffre repris doit être accompagné de sa source et de sa période quand elles sont fournies.
 - Les prix DVF sont des moyennes par commune, jamais des ventes individuelles.
+- Si annonce_cimco est null, il n'y a pas d'annonce publiée dans la commune : le dire positivement, indiquer que Cimco accompagne les recherches de terrain sur le secteur, et citer les annonces voisines fournies.
 - Français naturel, sans tirets cadratins.
 - Le texte doit être propre à la commune : appuie-toi sur ses données (annonce, population, prix moyen, annonces voisines du département).
 Réponds uniquement avec un objet JSON : {"intro": string, "local": string, "budget": string} (chaque valeur : un paragraphe de 2 à 4 phrases).`

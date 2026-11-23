@@ -29,6 +29,7 @@ export default function Preview({ s }) {
       )}
 
       <div className="space-y-8 p-6">
+        {s.figures.length > 0 && (
         <section>
           <h2 className="text-lg font-semibold">{s.figuresTitle}</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -46,6 +47,7 @@ export default function Preview({ s }) {
             })}
           </div>
         </section>
+        )}
 
         <section>
           <h2 className="text-lg font-semibold">{s.localTitle}</h2>
@@ -71,6 +73,7 @@ export default function Preview({ s }) {
         <section>
           <h2 className="text-lg font-semibold">{s.budgetTitle}</h2>
           <p className="mt-2 text-sm leading-relaxed text-slate-700">{s.budget}</p>
+          {s.breakdown.length > 0 && (
           <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
             {s.breakdown.map((r) => (
               <li key={r.label} className="flex justify-between gap-4 px-4 py-2.5">
@@ -79,6 +82,7 @@ export default function Preview({ s }) {
               </li>
             ))}
           </ul>
+          )}
         </section>
 
         <section className="rounded-xl bg-slate-50 p-5">

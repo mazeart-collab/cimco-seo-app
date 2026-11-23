@@ -15,10 +15,16 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
     `${c.name} (${c.cp}, ${c.depName}) : construisez votre maison avec Cimco.` +
     (pop ? ` Population : ${fmtNum(pop)} habitants (source : geo.api.gouv.fr).` : '')
 
-  const terrain = a.terrain_m2 ? `, terrain ${fmtNum(a.terrain_m2)} m²` : ''
-  let local = `Annonce ${a.ref} : maison ${a.maison_m2} m²${terrain}, ${fmtEur(a.budget)}.`
-  if (c.nbAnnonces > 1) local = `${c.nbAnnonces} annonces à ${c.name}. ` + local
-  if (neighbors.length) local += ` Autres annonces Cimco en ${c.depName} : ${neighbors.map((n) => n.name).join(', ')}.`
+  let local
+  if (a) {
+    const terrain = a.terrain_m2 ? `, terrain ${fmtNum(a.terrain_m2)} m²` : ''
+    local = `Annonce ${a.ref} : maison ${a.maison_m2} m²${terrain}, ${fmtEur(a.budget)}.`
+    if (c.nbAnnonces > 1) local = `${c.nbAnnonces} annonces à ${c.name}. ` + local
+    if (neighbors.length) local += ` Autres annonces Cimco en ${c.depName} : ${neighbors.map((n) => n.name).join(', ')}.`
+  } else {
+    local = `Aucune annonce n'est publiée à ${c.name} en ce moment, mais Cimco accompagne vos recherches de terrain sur le secteur.`
+    if (neighbors.length) local += ` Projets Cimco à proximité : ${neighbors.map((n) => n.name).join(', ')}.`
+  }
 
   const main = dvfMain(dvf)
   let budget
@@ -30,8 +36,10 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
     budget = `Prix moyen des maisons : ${fmtEur(m.prix_m2_moyen)} le m² habitable en moyenne, terrain inclus, sur ${m.nb_transactions} vente${m.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${m.periode}).`
   } else if (main?.[0] === 'repere') {
     budget = `Prix immobilier moyen : ${repereText(main[1])}.`
-  } else {
+  } else if (a) {
     budget = `Budget de l'annonce Cimco à ${c.name} : ${fmtEur(a.budget)}.`
+  } else {
+    budget = `Cimco vous aide à définir votre budget terrain et maison à ${c.name}.`
   }
 
   return {
@@ -64,11 +72,11 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
       note: `Source : ${dvf.repere.source}, ${dvf.repere.periode}`,
     })
   }
-  figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Référence ${a.ref}` })
+  if (a) figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Référence ${a.ref}` })
 
-  const listings = [c, ...neighbors].map((x, i) => ({
+  const listings = (a ? [c, ...neighbors] : neighbors).map((x, i) => ({
     name: x.name,
-    here: i === 0,
+    here: !!a && i === 0,
     ref: x.annonce.ref,
     url: x.annonce.url || LISTINGS_URL,
     title: `Projet maison ${x.annonce.maison_m2} m²${x.annonce.terrain_m2 ? ` + terrain ${fmtNum(x.annonce.terrain_m2)} m²` : ''} à ${x.name}`,
@@ -76,12 +84,13 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
   }))
 
   const breakdown = []
-  if (a.terrain_m2 && dvf?.terrain) {
+  if (a?.terrain_m2 && dvf?.terrain) {
     breakdown.push({ label: `Terrain de ${fmtNum(a.terrain_m2)} m² (estimation : surface de l'annonce × prix moyen DVF)`, value: fmtEur(a.terrain_m2 * dvf.terrain.prix_m2_moyen) })
   }
-  breakdown.push({ label: `Annonce Cimco ${a.ref} (maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''})`, value: fmtEur(a.budget) })
+  if (a) breakdown.push({ label: `Annonce Cimco ${a.ref} (maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''})`, value: fmtEur(a.budget) })
 
-  const annonceTxt = `l'annonce Cimco ${a.ref} propose une maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}`
+  const annonceTxt = !a ? '' : `l'annonce Cimco ${a.ref} propose une maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}`
+  const withAnnonce = (txt) => (a ? `${txt} À ${c.name}, ${annonceTxt}.` : txt)
   const faq = [
     dvf?.terrain
       ? {
@@ -91,18 +100,27 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
       : {
           q: `Quel budget prévoir pour construire à ${c.name} ?`,
           a: dvf?.maison
-            ? `Les maisons se vendent en moyenne ${fmtEur(dvf.maison.prix_m2_moyen)} le m² habitable, terrain inclus (${dvf.maison.nb_transactions} vente${dvf.maison.nb_transactions > 1 ? 's' : ''}, ${dvf.maison.periode}, source : ${dvf.source}). À ${c.name}, ${annonceTxt}.`
+            ? withAnnonce(`Les maisons se vendent en moyenne ${fmtEur(dvf.maison.prix_m2_moyen)} le m² habitable, terrain inclus (${dvf.maison.nb_transactions} vente${dvf.maison.nb_transactions > 1 ? 's' : ''}, ${dvf.maison.periode}, source : ${dvf.source}).`)
             : dvf?.repere
-              ? `Le prix immobilier moyen est de ${fmtEur(dvf.repere.prix_m2_moyen)} le m² (source : ${dvf.repere.source}, ${dvf.repere.periode}). À ${c.name}, ${annonceTxt}.`
-              : `À ${c.name}, ${annonceTxt}.`,
+              ? withAnnonce(`Le prix immobilier moyen est de ${fmtEur(dvf.repere.prix_m2_moyen)} le m² (source : ${dvf.repere.source}, ${dvf.repere.periode}).`)
+              : a
+                ? `À ${c.name}, ${annonceTxt}.`
+                : `Cimco vous aide à chiffrer votre projet de construction à ${c.name}, en fonction du terrain trouvé.`,
+        },
+    a
+      ? {
+          q: `Quelle annonce Cimco est disponible à ${c.name} ?`,
+          a: `L'annonce ${a.ref} : maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''}, au budget de ${fmtEur(a.budget)}.`,
+        }
+      : {
+          q: `Cimco peut-il m'aider à trouver un terrain à ${c.name} et alentours ?`,
+          a: `Oui. Même sans annonce publiée à ${c.name} en ce moment, Cimco accompagne les recherches de terrain sur le secteur et vous présente des projets à proximité.`,
         },
     {
-      q: `Quelle annonce Cimco est disponible à ${c.name} ?`,
-      a: `L'annonce ${a.ref} : maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''}, au budget de ${fmtEur(a.budget)}.`,
-    },
-    {
       q: `Cimco accompagne-t-il les projets à ${c.name} ?`,
-      a: `Oui. Cimco accompagne les projets de construction en Auvergne-Rhône-Alpes, et a une annonce active en ${c.depName}, à ${c.name}.`,
+      a: a
+        ? `Oui. Cimco accompagne les projets de construction en Auvergne-Rhône-Alpes, et a une annonce active en ${c.depName}, à ${c.name}.`
+        : `Oui. Cimco accompagne les projets de construction en Auvergne-Rhône-Alpes, y compris à ${c.name} et alentours.`,
     },
   ]
 
@@ -124,7 +142,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     intro: page.intro,
     figuresTitle: `${c.name} en chiffres`,
     figures,
-    localTitle: `Annonces Cimco à ${c.name} et alentours`,
+    localTitle: a ? `Annonces Cimco à ${c.name} et alentours` : `Projets Cimco à proximité de ${c.name}`,
     local: page.local,
     listings,
     budgetTitle: 'Budget terrain et maison',
@@ -135,7 +153,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     whyPoints: ['Courtier indépendant depuis 2009', 'Basé à Vourles', 'Accompagnement en Auvergne-Rhône-Alpes'],
     faqTitle: `Questions fréquentes sur la construction à ${c.name}`,
     faq,
-    ctaTitle: 'Demander à être rappelé',
+    ctaTitle: a ? 'Demander à être rappelé' : `Être alerté des prochains terrains à ${c.name}`,
     ctaNote: 'Aperçu de démonstration : à remplacer par le module formulaire HubSpot en production.',
   }
 }
@@ -240,21 +258,20 @@ export function pageToHtml(s, mode = 'raw') {
   </figure>`
     : ''
 
+  const breakdown = s.breakdown.length
+    ? `  <ul${standalone ? ' class="cl-list"' : ''}>\n${s.breakdown.map((b) => `    <li>${esc(b.label)} : <strong>${esc(b.value)}</strong></li>`).join('\n')}\n  </ul>`
+    : ''
+
   const body = `<div class="cimco-local">
 ${standalone ? `  <div class="cl-hero"><h1>${esc(s.h1)}</h1><p>${esc(s.intro)}</p></div>${figure}` : `  <h1>${esc(s.h1)}</h1>${figure}\n  <p>${esc(s.intro)}</p>`}
 
-  <h2>${esc(s.figuresTitle)}</h2>
-  ${figures}
-
-  <h2>${esc(s.localTitle)}</h2>
+${s.figures.length ? `  <h2>${esc(s.figuresTitle)}</h2>\n  ${figures}\n\n` : ''}  <h2>${esc(s.localTitle)}</h2>
   <p>${esc(s.local)}</p>
   ${listings}
 
   <h2>${esc(s.budgetTitle)}</h2>
   <p>${esc(s.budget)}</p>
-  <ul${standalone ? ' class="cl-list"' : ''}>
-${s.breakdown.map((b) => `    <li>${esc(b.label)} : <strong>${esc(b.value)}</strong></li>`).join('\n')}
-  </ul>
+${breakdown}
 
   <h2>${esc(s.whyTitle)}</h2>
   <p>${esc(s.why)}</p>

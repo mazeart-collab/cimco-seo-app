@@ -11,6 +11,7 @@ import Editor from './components/Editor'
 const STATUS_KEY = 'cimco.status.v1'
 const PAGES_KEY = 'cimco.pages.v1'
 const IMAGES_KEY = 'cimco.images.v1'
+const SIM_KEY = 'cimco.sim0.v1'
 
 const load = (key, fallback) => {
   try {
@@ -41,6 +42,7 @@ export default function App() {
     return init
   })
   const [pages, setPages] = useState(() => load(PAGES_KEY, {}))
+  const [sim0, setSim0] = useState(() => load(SIM_KEY, {}))
   const [images, setImages] = useState(() => load(IMAGES_KEY, {}))
   const [dvfTick, setDvfTick] = useState(0)
 
@@ -67,6 +69,20 @@ export default function App() {
       return next
     })
   }, [])
+
+  const setSimulated = useCallback((name, on) => {
+    setSim0((prev) => {
+      const next = { ...prev }
+      if (on) next[name] = true
+      else delete next[name]
+      save(SIM_KEY, next)
+      return next
+    })
+  }, [])
+
+  // Mode "0 annonce locale" : simulé, ou réel si la commune n'a plus d'annonce
+  const eff = useCallback((c) => (sim0[c.name] && c.annonce ? { ...c, annonce: null, nbAnnonces: 0 } : c), [sim0])
+  const pageKey = (c) => (c.nbAnnonces === 0 ? `${c.name}#sim0` : c.name)
 
   const selectImage = useCallback((name, photo) => {
     setImages((prev) => {
@@ -99,35 +115,41 @@ export default function App() {
   }, [communes, geo, status])
 
   // Annonces du même département, les plus proches par code postal en premier
+  // Annonces voisines : même département d'abord ; sans annonce locale, complétées par la région si besoin
   const neighborsOf = useCallback(
-    (c) =>
-      communes
-        .filter((x) => x.dep === c.dep && x.name !== c.name)
-        .sort((a, b) => Math.abs(a.cp - c.cp) - Math.abs(b.cp - c.cp) || a.name.localeCompare(b.name))
-        .slice(0, 3),
+    (c) => {
+      const byProximity = (a, b) => Math.abs(a.cp - c.cp) - Math.abs(b.cp - c.cp) || a.name.localeCompare(b.name)
+      const sameDep = communes.filter((x) => x.dep === c.dep && x.name !== c.name).sort(byProximity)
+      if (c.nbAnnonces > 0 || sameDep.length >= 3) return sameDep.slice(0, 3)
+      // Sans annonce locale et moins de 3 annonces dans le département : complété par les plus proches de la région
+      const others = communes.filter((x) => x.dep !== c.dep).sort(byProximity)
+      return [...sameDep, ...others].slice(0, 3)
+    },
     [communes],
   )
 
   // Page effective : texte de secours (données réelles) surchargé par le texte généré ou modifié
   const pageFor = useCallback(
-    (c) => {
+    (raw) => {
+      const c = eff(raw)
       const info = geo[c.name]
       const dvf = info?.code ? cachedDvf(info.code) : null
-      return { ...buildTemplatePage(c, info, dvf, neighborsOf(c)), ...(pages[c.name] || {}) }
+      return { ...buildTemplatePage(c, info, dvf, neighborsOf(c)), ...(pages[pageKey(c)] || {}) }
     },
     // dvfTick force le recalcul quand un nouveau résultat DVF est mis en cache
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [geo, pages, neighborsOf, dvfTick],
+    [geo, pages, neighborsOf, dvfTick, eff],
   )
 
   // Page complète (sections) : source unique pour l'aperçu, l'export HTML et la similarité
   const sectionsFor = useCallback(
-    (c) => {
+    (raw) => {
+      const c = eff(raw)
       const info = geo[c.name]
       const dvf = info?.code ? cachedDvf(info.code) : null
       return buildSections(c, pageFor(c), dvf, neighborsOf(c), images[c.name] || null)
     },
-    [geo, pageFor, neighborsOf, images],
+    [geo, pageFor, neighborsOf, images, eff],
   )
 
   const nextCommune = ranked.find((c) => c.status === 'a_creer')
@@ -176,13 +198,16 @@ export default function App() {
           current && (
             <Editor
               key={current.name}
-              commune={current}
+              commune={eff(current)}
+              simulated={!!sim0[current.name]}
+              onSimulate={(on) => setSimulated(current.name, on)}
+              pageKey={pageKey(eff(current))}
               all={ranked}
               sectionsFor={sectionsFor}
               selectedPhoto={images[current.name] || null}
               onPhoto={selectImage}
-              hasOverride={!!pages[current.name]}
-              neighbors={neighborsOf(current)}
+              hasOverride={!!pages[pageKey(eff(current))]}
+              neighbors={neighborsOf(eff(current))}
               onSelect={setSelected}
               onSavePage={savePage}
               onStatus={setCommuneStatus}

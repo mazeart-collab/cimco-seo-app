@@ -8,7 +8,7 @@ import { jaccard, sectionsText, pageToHtml } from '../lib/page'
 
 const THRESHOLD = 0.4
 
-export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf, selectedPhoto, onPhoto }) {
+export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf, selectedPhoto, onPhoto, simulated, onSimulate, pageKey }) {
   const code = c.info?.code
   const [dvf, setDvf] = useState(() => (code ? cachedDvf(code) : null))
   const [dvfState, setDvfState] = useState(dvf ? 'ok' : code ? 'loading' : 'nocode')
@@ -105,7 +105,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     setNotice(null)
     const r = await generate(payload())
     if (r.page) {
-      onSavePage(c.name, r.page)
+      onSavePage(pageKey, r.page)
       onStatus(c.name, 'traitee')
       setNotice({ type: 'ok', text: 'Page générée et enregistrée.' })
     } else if (r.error) {
@@ -217,13 +217,24 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
               <div>
                 <dt className="text-xs text-slate-500">Annonce Cimco</dt>
                 <dd className="font-medium">
-                  {c.annonce.ref} : maison {c.annonce.maison_m2} m²
-                  {c.annonce.terrain_m2 ? `, terrain ${c.annonce.terrain_m2} m²` : ''}, {fmtEur(c.annonce.budget)}
+                  {c.annonce ? (
+                    <>
+                      {c.annonce.ref} : maison {c.annonce.maison_m2} m²
+                      {c.annonce.terrain_m2 ? `, terrain ${c.annonce.terrain_m2} m²` : ''}, {fmtEur(c.annonce.budget)}
+                    </>
+                  ) : (
+                    'Aucune annonce publiée'
+                  )}
                 </dd>
               </div>
             </div>
           </dl>
         </section>
+
+        <label className="flex cursor-pointer items-center gap-2 px-1 text-xs text-slate-500">
+          <input type="checkbox" checked={simulated} onChange={(e) => onSimulate(e.target.checked)} className="h-3.5 w-3.5 accent-[#4a6a78]" />
+          Simuler 0 annonce locale (bien vendu)
+        </label>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-sm font-semibold">Illustration de la commune</h3>
