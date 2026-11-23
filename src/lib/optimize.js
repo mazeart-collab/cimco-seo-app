@@ -1,5 +1,7 @@
 const MAX_WIDTH = 1200
-const QUALITY = 0.82
+const QUALITIES = [0.82, 0.75, 0.68, 0.6]
+const FALLBACK_WIDTHS = [1000, 800, 640] // dernier recours si 100 Ko ne tient pas à la qualité 0.60
+export const MAX_BYTES = 100 * 1024
 
 export const slugify = (s) =>
   s
@@ -24,11 +26,7 @@ async function loadBlob(url) {
   return r.blob()
 }
 
-// Redimensionne (1200 px max, sans agrandir) et exporte en WebP qualité 0.82
-export async function optimizeImage(url) {
-  const source = await loadBlob(url)
-  const bitmap = await createImageBitmap(source)
-  const width = Math.min(MAX_WIDTH, bitmap.width)
+const encode = (bitmap, width, quality) => {
   const height = Math.round((bitmap.height * width) / bitmap.width)
   const canvas = document.createElement('canvas')
   canvas.width = width
@@ -36,10 +34,24 @@ export async function optimizeImage(url) {
   const ctx = canvas.getContext('2d')
   ctx.imageSmoothingQuality = 'high'
   ctx.drawImage(bitmap, 0, 0, width, height)
+  return new Promise((resolve) => canvas.toBlob((blob) => resolve({ blob, width, height, quality }), 'image/webp', quality))
+}
+
+// Redimensionne (1200 px max, sans agrandir) et exporte en WebP, en visant 100 Ko maximum :
+// qualité 0.82, puis 0.75, 0.68, 0.60 ; si ce n'est pas assez, la largeur est réduite à qualité 0.60.
+export async function optimizeImage(url) {
+  const source = await loadBlob(url)
+  const bitmap = await createImageBitmap(source)
+  const full = Math.min(1200, bitmap.width)
+  const attempts = [...QUALITIES.map((q) => [full, q]), ...FALLBACK_WIDTHS.filter((w) => w < full).map((w) => [w, 0.6])]
+  let result
+  for (const [w, q] of attempts) {
+    result = await encode(bitmap, w, q)
+    if (!result.blob || result.blob.type !== 'image/webp') throw new Error('webp_non_supporte')
+    if (result.blob.size <= MAX_BYTES) break
+  }
   bitmap.close?.()
-  const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/webp', QUALITY))
-  if (!blob || blob.type !== 'image/webp') throw new Error('webp_non_supporte')
-  return { blob, width, height, originalSize: source.size }
+  return { ...result, originalSize: source.size, underLimit: result.blob.size <= MAX_BYTES }
 }
 
 export function download(blob, filename) {

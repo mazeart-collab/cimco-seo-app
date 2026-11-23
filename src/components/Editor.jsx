@@ -25,7 +25,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     try {
       const r = await optimizeImage(selectedPhoto.url)
       download(r.blob, seoFileName(c.name, c.dep))
-      setOpt({ state: 'done', size: r.blob.size, original: r.originalSize, width: r.width })
+      setOpt({ state: 'done', size: r.blob.size, original: r.originalSize, width: r.width, quality: r.quality, underLimit: r.underLimit })
     } catch {
       setOpt({ state: 'error' })
     }
@@ -282,7 +282,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
               </button>
               {opt.state === 'done' && (
                 <p className="mt-1.5 text-xs text-emerald-700">
-                  Prêt : {formatKo(opt.size)} en WebP ({opt.width} px de large, original : {formatKo(opt.original)}). Fichier : {seoFileName(c.name, c.dep)}
+                  Prêt : {formatKo(opt.size)} en WebP ({opt.width} px de large, qualité {opt.quality}, original : {formatKo(opt.original)}).{!opt.underLimit && ' Attention : dépasse encore 100 Ko.'} Fichier : {seoFileName(c.name, c.dep)}
                 </p>
               )}
               {opt.state === 'error' && <p className="mt-1.5 text-xs text-amber-700">Impossible d'optimiser cette image (source inaccessible ou format non pris en charge).</p>}
