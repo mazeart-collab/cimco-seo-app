@@ -36,11 +36,9 @@ export default function Preview({ s }) {
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {s.listings.map((l) => (
               <div key={l.ref} className={`rounded-lg border p-3 ${l.here ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200'}`}>
-                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
-                  {l.name} · {l.ref}
-                </p>
-                <p className="mt-1 text-sm">{l.detail}</p>
-                <p className="text-base font-bold">{l.budget}</p>
+                <p className="text-sm font-semibold">{l.title}</p>
+                <p className="mt-1 text-base font-bold">{l.budget}</p>
+                <p className="mt-2 text-xs text-slate-400">Réf. {l.ref}</p>
               </div>
             ))}
           </div>

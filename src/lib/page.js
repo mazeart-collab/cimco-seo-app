@@ -71,7 +71,7 @@ export function buildSections(c, page, dvf, neighbors) {
     name: x.name,
     here: i === 0,
     ref: x.annonce.ref,
-    detail: `Maison ${x.annonce.maison_m2} m²${x.annonce.terrain_m2 ? `, terrain ${fmtNum(x.annonce.terrain_m2)} m²` : ''}`,
+    title: `Projet maison ${x.annonce.maison_m2} m²${x.annonce.terrain_m2 ? ` + terrain ${fmtNum(x.annonce.terrain_m2)} m²` : ''} à ${x.name}`,
     budget: fmtEur(x.annonce.budget),
   }))
 
@@ -127,7 +127,7 @@ export function sectionsText(s) {
     s.h1, s.intro, s.figuresTitle,
     ...s.figures.flatMap((f) => [f.label, f.value, f.note]),
     s.localTitle, s.local,
-    ...s.listings.flatMap((l) => [l.name, l.ref, l.detail, l.budget]),
+    ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`]),
     s.budgetTitle, s.budget,
     ...s.breakdown.flatMap((b) => [b.label, b.value]),
     s.whyTitle, s.why, ...s.whyPoints,
@@ -176,6 +176,7 @@ const STYLE = `<style>
 .cimco-local .cl-card.is-here{border-color:var(--cimco-primary);background:var(--cimco-soft)}
 .cimco-local .cl-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
 .cimco-local .cl-value{font-size:1.25rem;font-weight:700}
+.cimco-local .cl-ref{font-size:.75rem;color:#94a3b8;margin-top:.5rem}
 .cimco-local .cl-note{font-size:.8rem;color:#64748b}
 .cimco-local ul.cl-list{padding-left:1.2rem}
 .cimco-local details{border:1px solid var(--cimco-line);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem}
@@ -190,8 +191,8 @@ export function pageToHtml(s, mode = 'raw') {
     : `<ul>\n${s.figures.map((f) => `    <li><strong>${esc(f.label)} :</strong> ${esc(f.value)} (${esc(f.note)})</li>`).join('\n')}\n  </ul>`
 
   const listings = standalone
-    ? `<div class="cl-grid">\n${s.listings.map((l) => `    <div class="cl-card${l.here ? ' is-here' : ''}"><div class="cl-label">${esc(l.name)} · ${esc(l.ref)}</div><div>${esc(l.detail)}</div><div class="cl-value">${esc(l.budget)}</div></div>`).join('\n')}\n  </div>`
-    : `<ul>\n${s.listings.map((l) => `    <li><strong>${esc(l.name)}</strong> (${esc(l.ref)}) : ${esc(l.detail)}, ${esc(l.budget)}</li>`).join('\n')}\n  </ul>`
+    ? `<div class="cl-grid">\n${s.listings.map((l) => `    <div class="cl-card${l.here ? ' is-here' : ''}"><div><strong>${esc(l.title)}</strong></div><div class="cl-value">${esc(l.budget)}</div><div class="cl-ref">Réf. ${esc(l.ref)}</div></div>`).join('\n')}\n  </div>`
+    : `<ul>\n${s.listings.map((l) => `    <li><strong>${esc(l.title)}</strong> : ${esc(l.budget)} (Réf. ${esc(l.ref)})</li>`).join('\n')}\n  </ul>`
 
   const faq = standalone
     ? s.faq.map((f) => `  <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('\n')
