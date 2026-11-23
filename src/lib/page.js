@@ -21,8 +21,7 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
 
   let local
   if (a) {
-    const terrain = a.terrain_m2 ? `, terrain ${fmtNum(a.terrain_m2)} m²` : ''
-    local = `Annonce ${a.ref} : maison ${a.maison_m2} m²${terrain}, ${fmtEur(a.budget)}.`
+    local = `À ${c.name}, Cimco propose par exemple un projet de maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}.`
     if (c.nbAnnonces > 1) local = `${c.nbAnnonces} annonces à ${c.name}. ` + local
     if (neighbors.length) local += ` Autres annonces Cimco en ${c.depName} : ${neighbors.map((n) => n.name).join(', ')}.`
   } else {
@@ -41,7 +40,7 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
   } else if (main?.[0] === 'repere') {
     budget = `Prix immobilier moyen : ${repereText(main[1])}.`
   } else if (a) {
-    budget = `Budget de l'annonce Cimco à ${c.name} : ${fmtEur(a.budget)}.`
+    budget = `À ${c.name}, Cimco propose par exemple un projet de maison au budget de ${fmtEur(a.budget)}.`
   } else {
     budget = `Cimco vous aide à définir votre budget terrain et maison à ${c.name}.`
   }
@@ -76,7 +75,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
       note: `Source : ${dvf.repere.source}, ${dvf.repere.periode}`,
     })
   }
-  if (a) figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Référence ${a.ref}` })
+  if (a) figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Projet de maison de ${a.maison_m2} m²` })
 
   const listings = (a ? [c, ...neighbors] : neighbors).map((x, i) => ({
     name: x.name,
@@ -91,9 +90,9 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
   if (a?.terrain_m2 && dvf?.terrain) {
     breakdown.push({ label: `Terrain de ${fmtNum(a.terrain_m2)} m² (estimation : surface de l'annonce × prix moyen DVF)`, value: fmtEur(a.terrain_m2 * dvf.terrain.prix_m2_moyen) })
   }
-  if (a) breakdown.push({ label: `Annonce Cimco ${a.ref} (maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''})`, value: fmtEur(a.budget) })
+  if (a) breakdown.push({ label: `Projet Cimco (maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''})`, value: fmtEur(a.budget) })
 
-  const annonceTxt = !a ? '' : `l'annonce Cimco ${a.ref} propose une maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}`
+  const annonceTxt = !a ? '' : `Cimco propose par exemple un projet de maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}`
   const withAnnonce = (txt) => (a ? `${txt} À ${c.name}, ${annonceTxt}.` : txt)
   const faq = [
     dvf?.terrain
@@ -114,7 +113,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     a
       ? {
           q: `Quelle annonce Cimco est disponible à ${c.name} ?`,
-          a: `L'annonce ${a.ref} : maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''}, au budget de ${fmtEur(a.budget)}.`,
+          a: `À ${c.name}, Cimco propose par exemple un projet de maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}.`,
         }
       : {
           q: `Cimco peut-il m'aider à trouver un terrain à ${c.name} et alentours ?`,
@@ -263,7 +262,7 @@ export function pageToHtml(s, mode = 'raw') {
 
   const listings = standalone
     ? `<div class="cl-grid">\n${s.listings.map((l) => `    <a class="cl-card${l.here ? ' is-here' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><div><strong>${esc(l.title)}</strong></div><div class="cl-value">${esc(l.budget)}</div><div class="cl-ref">Réf. ${esc(l.ref)}</div><div class="cl-more">Voir sur cimco.fr →</div></a>`).join('\n')}\n  </div>`
-    : `<ul>\n${s.listings.map((l) => `    <li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><strong>${esc(l.title)}</strong></a> : ${esc(l.budget)} (Réf. ${esc(l.ref)}) <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">Voir sur cimco.fr →</a></li>`).join('\n')}\n  </ul>`
+    : `<ul>\n${s.listings.map((l) => `    <li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><strong>${esc(l.title)}</strong></a> : ${esc(l.budget)} <small>(Réf. ${esc(l.ref)})</small> <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">Voir sur cimco.fr →</a></li>`).join('\n')}\n  </ul>`
 
   const faq = standalone
     ? s.faq.map((f) => `  <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('\n')

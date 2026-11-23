@@ -28,6 +28,7 @@ Règles strictes :
 - Tout chiffre repris doit être accompagné de sa source et de sa période quand elles sont fournies.
 - Les prix DVF sont des moyennes par commune, jamais des ventes individuelles.
 - Si annonce_cimco est null, il n'y a pas d'annonce publiée dans la commune : le dire positivement, indiquer que Cimco accompagne les recherches de terrain sur le secteur, et citer les annonces voisines fournies.
+- Ne cite jamais les codes de référence internes des annonces dans le texte rédigé.
 - Français naturel, sans tirets cadratins.
 - Le texte doit être propre à la commune : appuie-toi sur ses données (annonce, population, prix moyen, annonces voisines du département).
 Réponds uniquement avec un objet JSON : {"intro": string, "local": string, "budget": string} (chaque valeur : un paragraphe de 2 à 4 phrases).`
@@ -49,7 +50,7 @@ export default async function handler(req, res) {
     code_postal: short(b.commune?.cp, 10),
     departement: short(b.commune?.depName, 40),
     population: b.commune?.population ?? null,
-    annonce_cimco: b.commune?.annonce ?? null,
+    annonce_cimco: b.commune?.annonce ? Object.fromEntries(Object.entries(b.commune.annonce).filter(([k]) => k !== 'ref')) : null,
     annonces_voisines_departement: Array.isArray(b.commune?.neighbors) ? b.commune.neighbors.slice(0, 8).map((x) => short(x, 60)) : [],
     dvf: b.dvf ?? null,
   }
