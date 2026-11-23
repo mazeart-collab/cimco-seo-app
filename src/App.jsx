@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { ListOrdered, PenSquare, MapPin } from 'lucide-react'
-import { buildCommunes, SEED_TREATED, seoScore } from './lib/data'
+import { buildCommunes, SEED_TREATED, seoBreakdown, seoLevel } from './lib/data'
 import { enrich, loadGeoCache } from './lib/geo'
 import { cachedDvf } from './lib/api'
-import { buildTemplatePage } from './lib/page'
+import { buildTemplatePage, buildSections } from './lib/page'
 import Banner from './components/Banner'
 import Queue from './components/Queue'
 import Editor from './components/Editor'
@@ -72,7 +72,16 @@ export default function App() {
     return communes
       .map((c) => {
         const info = geo[c.name]
-        return { ...c, info, population: info?.population ?? null, score: seoScore(c, info?.population, maxPop, maxAnn), status: status[c.name] || 'a_creer' }
+        const breakdown = seoBreakdown(c, info?.population, maxPop, maxAnn)
+        return {
+          ...c,
+          info,
+          population: info?.population ?? null,
+          breakdown,
+          score: breakdown.total,
+          level: seoLevel(breakdown.total, info?.population),
+          status: status[c.name] || 'a_creer',
+        }
       })
       .sort((a, b) => b.score - a.score || b.nbAnnonces - a.nbAnnonces || (b.population || 0) - (a.population || 0) || b.budgetMin - a.budgetMin)
   }, [communes, geo, status])
@@ -83,8 +92,7 @@ export default function App() {
       communes
         .filter((x) => x.dep === c.dep && x.name !== c.name)
         .sort((a, b) => Math.abs(a.cp - c.cp) - Math.abs(b.cp - c.cp) || a.name.localeCompare(b.name))
-        .slice(0, 3)
-        .map((x) => x.name),
+        .slice(0, 3),
     [communes],
   )
 
@@ -98,6 +106,16 @@ export default function App() {
     // dvfTick force le recalcul quand un nouveau résultat DVF est mis en cache
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [geo, pages, neighborsOf, dvfTick],
+  )
+
+  // Page complète (sections) : source unique pour l'aperçu, l'export HTML et la similarité
+  const sectionsFor = useCallback(
+    (c) => {
+      const info = geo[c.name]
+      const dvf = info?.code ? cachedDvf(info.code) : null
+      return buildSections(c, pageFor(c), dvf, neighborsOf(c))
+    },
+    [geo, pageFor, neighborsOf],
   )
 
   const nextCommune = ranked.find((c) => c.status === 'a_creer')
@@ -150,8 +168,7 @@ export default function App() {
               key={current.name}
               commune={current}
               all={ranked}
-              pageFor={pageFor}
-              page={pageFor(current)}
+              sectionsFor={sectionsFor}
               hasOverride={!!pages[current.name]}
               neighbors={neighborsOf(current)}
               onSelect={setSelected}

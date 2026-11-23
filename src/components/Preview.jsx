@@ -1,35 +1,56 @@
-import { Home, Ruler, Phone } from 'lucide-react'
-import { budgetBreakdown } from '../lib/page'
-import { fmtEur } from '../lib/data'
+import { Home, Phone, Users, Landmark, Wallet, ChevronDown, CheckCircle2 } from 'lucide-react'
 
-export default function Preview({ commune: c, page, dvf }) {
-  const a = c.annonce
+const ICONS = [Users, Landmark, Home, Wallet]
+
+export default function Preview({ s }) {
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
       <div className="bg-slate-900 px-6 py-8 text-white">
-        <h1 className="text-2xl font-bold sm:text-3xl">{page.h1}</h1>
-        <p className="mt-3 text-sm leading-relaxed text-slate-300">{page.intro}</p>
+        <h1 className="text-2xl font-bold sm:text-3xl">{s.h1}</h1>
+        <p className="mt-3 text-sm leading-relaxed text-slate-300">{s.intro}</p>
       </div>
 
-      <div className="space-y-6 p-6">
+      <div className="space-y-8 p-6">
         <section>
-          <h2 className="text-lg font-semibold">Nos annonces à {c.name}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-700">{page.local}</p>
-          <div className="mt-3 rounded-lg border border-slate-200 p-4">
-            <p className="text-xs font-medium uppercase tracking-wide text-slate-400">Annonce Cimco {a.ref}</p>
-            <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm">
-              <span className="flex items-center gap-1.5"><Home size={15} className="text-indigo-500" /> Maison {a.maison_m2} m²</span>
-              {a.terrain_m2 && <span className="flex items-center gap-1.5"><Ruler size={15} className="text-indigo-500" /> Terrain {a.terrain_m2} m²</span>}
-              <span className="font-semibold">{fmtEur(a.budget)}</span>
-            </div>
+          <h2 className="text-lg font-semibold">{s.figuresTitle}</h2>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {s.figures.map((f, i) => {
+              const Icon = ICONS[i] || Landmark
+              const missing = f.value === 'Non disponible'
+              return (
+                <div key={f.label} className="rounded-lg border border-slate-200 p-3">
+                  <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
+                    <Icon size={13} /> {f.label}
+                  </p>
+                  <p className={`mt-1 text-lg font-bold ${missing ? 'text-slate-400' : ''}`}>{f.value}</p>
+                  <p className="text-xs text-slate-500">{f.note}</p>
+                </div>
+              )
+            })}
           </div>
         </section>
 
         <section>
-          <h2 className="text-lg font-semibold">Budget terrain et maison</h2>
-          <p className="mt-2 text-sm leading-relaxed text-slate-700">{page.budget}</p>
+          <h2 className="text-lg font-semibold">{s.localTitle}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">{s.local}</p>
+          <div className="mt-3 grid gap-3 sm:grid-cols-2">
+            {s.listings.map((l) => (
+              <div key={l.ref} className={`rounded-lg border p-3 ${l.here ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200'}`}>
+                <p className="text-xs font-medium uppercase tracking-wide text-slate-400">
+                  {l.name} · {l.ref}
+                </p>
+                <p className="mt-1 text-sm">{l.detail}</p>
+                <p className="text-base font-bold">{l.budget}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">{s.budgetTitle}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-slate-700">{s.budget}</p>
           <ul className="mt-3 divide-y divide-slate-100 rounded-lg border border-slate-200 text-sm">
-            {budgetBreakdown(c, dvf).map((r) => (
+            {s.breakdown.map((r) => (
               <li key={r.label} className="flex justify-between gap-4 px-4 py-2.5">
                 <span className="text-slate-600">{r.label}</span>
                 <span className="shrink-0 font-semibold">{r.value}</span>
@@ -38,9 +59,36 @@ export default function Preview({ commune: c, page, dvf }) {
           </ul>
         </section>
 
+        <section className="rounded-xl bg-slate-50 p-5">
+          <h2 className="text-lg font-semibold">{s.whyTitle}</h2>
+          <p className="mt-2 text-sm text-slate-700">{s.why}</p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {s.whyPoints.map((p) => (
+              <li key={p} className="flex items-center gap-2">
+                <CheckCircle2 size={16} className="text-indigo-600" /> {p}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-lg font-semibold">{s.faqTitle}</h2>
+          <div className="mt-3 space-y-2">
+            {s.faq.map((f) => (
+              <details key={f.q} className="group rounded-lg border border-slate-200 px-4 py-3">
+                <summary className="flex cursor-pointer list-none items-center justify-between text-sm font-semibold">
+                  {f.q}
+                  <ChevronDown size={16} className="text-slate-400 transition group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 text-sm leading-relaxed text-slate-600">{f.a}</p>
+              </details>
+            ))}
+          </div>
+        </section>
+
         <section className="rounded-xl bg-indigo-50 p-5">
           <h2 className="flex items-center gap-2 text-lg font-semibold text-indigo-900">
-            <Phone size={18} /> Demander à être rappelé
+            <Phone size={18} /> {s.ctaTitle}
           </h2>
           <form className="mt-3 grid gap-3 sm:grid-cols-2" onSubmit={(e) => e.preventDefault()}>
             <input className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm" placeholder="Nom" />

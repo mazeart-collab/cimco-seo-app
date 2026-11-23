@@ -49,10 +49,19 @@ export function buildCommunes() {
   }))
 }
 
-// Score de potentiel SEO (0 à 100) : annonces actives (30 %) + population (70 %)
-export function seoScore(c, pop, maxPop, maxAnn) {
-  const a = (c.nbAnnonces / maxAnn) * 30
-  if (!pop) return Math.round(a)
-  const p = (Math.log10(pop) / Math.log10(maxPop)) * 70
-  return Math.round(a + p)
+// Score de potentiel SEO (0 à 100) : annonces Cimco actives (30 points) + population (70 points, échelle logarithmique)
+export const SCORE_WEIGHTS = { annonces: 30, population: 70 }
+
+export function seoBreakdown(c, pop, maxPop, maxAnn) {
+  const ann = (c.nbAnnonces / maxAnn) * SCORE_WEIGHTS.annonces
+  const popPts = pop ? (Math.log10(pop) / Math.log10(maxPop)) * SCORE_WEIGHTS.population : 0
+  return { annonces: Math.round(ann), population: Math.round(popPts), total: Math.round(ann + popPts), maxPop, maxAnn }
+}
+
+// Niveau affiché : "À évaluer" tant que la population est inconnue
+export function seoLevel(total, pop) {
+  if (!pop) return { label: 'À évaluer', tone: 'slate' }
+  if (total >= 75) return { label: 'Haute', tone: 'emerald' }
+  if (total >= 55) return { label: 'Moyenne', tone: 'amber' }
+  return { label: 'Basse', tone: 'rose' }
 }

@@ -3,18 +3,20 @@ import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info
 import Preview from './Preview'
 import { fmtEur, fmtNum } from '../lib/data'
 import { fetchDvf, generate, cachedDvf } from '../lib/api'
-import { jaccard, pageText, pageToHtml } from '../lib/page'
+import { jaccard, sectionsText, pageToHtml } from '../lib/page'
 
 const THRESHOLD = 0.4
 
-export default function Editor({ commune: c, all, pageFor, page, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf }) {
+export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf }) {
   const code = c.info?.code
   const [dvf, setDvf] = useState(() => (code ? cachedDvf(code) : null))
   const [dvfState, setDvfState] = useState(dvf ? 'ok' : code ? 'loading' : 'nocode')
   const [instructions, setInstructions] = useState('')
   const [busy, setBusy] = useState(false)
   const [notice, setNotice] = useState(null)
-  const [copied, setCopied] = useState(false)
+  const [copied, setCopied] = useState(null)
+
+  const sections = sectionsFor(c)
 
   useEffect(() => {
     if (!code || dvf) return
@@ -35,21 +37,21 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
 
   // Similarité de Jaccard avec les autres pages traitées
   const similarity = useMemo(() => {
-    const text = pageText(page)
+    const text = sectionsText(sections)
     const others = all.filter((x) => x.status === 'traitee' && x.name !== c.name)
     let best = { score: 0, name: null }
     for (const o of others) {
-      const s = jaccard(text, pageText(pageFor(o)))
+      const s = jaccard(text, sectionsText(sectionsFor(o)))
       if (s > best.score) best = { score: s, name: o.name }
     }
     return { ...best, compared: others.length }
-  }, [page, all, c.name, pageFor])
+  }, [sections, all, c.name, sectionsFor])
 
   const payload = () => ({
-    commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors },
-    dvf: dvf ? { source: dvf.source, periode: dvf.periode, terrain: dvf.terrain, maison: dvf.maison } : null,
+    commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => n.name) },
+    dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison } : null,
     instructions,
-    current: hasOverride ? { intro: page.intro, local: page.local, budget: page.budget } : null,
+    current: hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget } : null,
   })
 
   const run = async () => {
@@ -57,7 +59,7 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
     setNotice(null)
     const r = await generate(payload())
     if (r.page) {
-      onSavePage(c.name, { ...page, ...r.page })
+      onSavePage(c.name, r.page)
       onStatus(c.name, 'traitee')
       setNotice({ type: 'ok', text: 'Page générée et enregistrée.' })
     } else if (r.error) {
@@ -72,8 +74,8 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
     setBusy(false)
   }
 
-  const copy = async () => {
-    const html = pageToHtml(c, page, dvf)
+  const copy = async (mode) => {
+    const html = pageToHtml(sections, mode)
     try {
       await navigator.clipboard.writeText(html)
     } catch {
@@ -84,8 +86,8 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
       document.execCommand('copy')
       t.remove()
     }
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    setCopied(mode)
+    setTimeout(() => setCopied(null), 2000)
   }
 
   const pct = Math.round(similarity.score * 100)
@@ -134,15 +136,22 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
                     <Loader2 size={14} className="animate-spin" /> Chargement
                   </dd>
                 )}
-                {dvfState === 'ok' && dvf?.terrain && (
-                  <>
-                    <dd className="font-medium">{fmtEur(dvf.terrain.prix_m2_moyen)} / m²</dd>
-                    <dd className="text-xs text-slate-400">
-                      {dvf.terrain.nb_transactions} ventes, {dvf.periode}. Source : {dvf.source}
-                    </dd>
-                  </>
-                )}
-                {dvfState === 'ok' && !dvf?.terrain && <dd className="font-medium text-slate-500">Pas de moyenne exploitable</dd>}
+                {dvfState === 'ok' &&
+                  [['terrain', 'Terrains à bâtir'], ['maison', 'Maisons, terrain inclus, par m² habitable']].map(
+                    ([k, label]) =>
+                      dvf?.[k] && (
+                        <div key={k} className="mb-1">
+                          <dd className="font-medium">
+                            {fmtEur(dvf[k].prix_m2_moyen)} / m² <span className="text-xs font-normal text-slate-500">({label})</span>
+                          </dd>
+                          <dd className="text-xs text-slate-400">
+                            {dvf[k].nb_transactions} vente{dvf[k].nb_transactions > 1 ? 's' : ''}, {dvf[k].periode}
+                          </dd>
+                        </div>
+                      ),
+                  )}
+                {dvfState === 'ok' && dvf && <dd className="text-xs text-slate-400">Source : {dvf.source}</dd>}
+                {dvfState === 'ok' && !dvf?.terrain && !dvf?.maison && <dd className="font-medium text-slate-500">Pas de moyenne exploitable</dd>}
                 {dvfState === 'error' && <dd className="font-medium text-amber-700">Données DVF momentanément indisponibles</dd>}
                 {dvfState === 'nocode' && <dd className="font-medium text-slate-500">Code INSEE non disponible</dd>}
               </div>
@@ -200,11 +209,16 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
             <div className={`h-full rounded-full ${risky ? 'bg-red-500' : 'bg-emerald-500'}`} style={{ width: Math.min(100, pct) + '%' }} />
             <div className="absolute inset-y-0 w-px bg-slate-400" style={{ left: THRESHOLD * 100 + '%' }} />
           </div>
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs text-slate-600">
             {similarity.compared
-              ? `Comparaison avec ${similarity.compared} page${similarity.compared > 1 ? 's' : ''} traitée${similarity.compared > 1 ? 's' : ''}. Plus proche : ${similarity.name} (seuil d'alerte : 40 %).`
-              : "Aucune autre page traitée à comparer."}
+              ? `${pct} % de mots en commun avec ${similarity.name} (calculé via l'indice de Jaccard)`
+              : 'Aucune autre page traitée à comparer.'}
           </p>
+          {similarity.compared > 0 && (
+            <p className="mt-1 text-xs text-slate-400">
+              Indice de Jaccard : mots en commun divisés par l'ensemble des mots des deux pages, comptés par suites de 3 mots. Comparaison avec {similarity.compared} page{similarity.compared > 1 ? 's' : ''} traitée{similarity.compared > 1 ? 's' : ''}, seuil d'alerte 40 %.
+            </p>
+          )}
           {risky && (
             <p className="mt-2 flex gap-2 rounded-lg bg-red-50 p-3 text-xs text-red-700">
               <AlertTriangle size={14} className="mt-0.5 shrink-0" /> Similarité supérieure à 40 % avec {similarity.name} : risque de contenu dupliqué. Ajoutez des données propres à la commune ou reformulez.
@@ -212,19 +226,30 @@ export default function Editor({ commune: c, all, pageFor, page, hasOverride, ne
           )}
         </section>
 
-        <button
-          onClick={copy}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold shadow-sm hover:bg-slate-50"
-        >
-          {copied ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
-          {copied ? 'HTML copié' : 'Copier le HTML pour HubSpot'}
-        </button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {[
+            ['raw', 'Copier HTML brut (HubSpot Rich Text)', 'Sans CSS, hérite du thème de cimco.fr'],
+            ['standalone', 'Copier HTML autonome (avec CSS)', 'Bloc <style> isolé, pour un module HTML personnalisé'],
+          ].map(([mode, label, hint]) => (
+            <button
+              key={mode}
+              onClick={() => copy(mode)}
+              className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-left shadow-sm hover:bg-slate-50"
+            >
+              <span className="flex items-center gap-2 text-sm font-semibold">
+                {copied === mode ? <Check size={16} className="text-emerald-600" /> : <Copy size={16} />}
+                {copied === mode ? 'HTML copié' : label}
+              </span>
+              <span className="mt-0.5 block text-xs text-slate-500">{hint}</span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Colonne droite */}
       <div className="lg:sticky lg:top-4 lg:self-start">
         <p className="mb-2 text-xs font-medium uppercase tracking-wide text-slate-400">Aperçu de la page</p>
-        <Preview commune={c} page={page} dvf={dvf} />
+        <Preview s={sections} />
       </div>
     </div>
   )

@@ -1,6 +1,47 @@
 import { useState } from 'react'
-import { Check, Plus, Pencil, AlertCircle } from 'lucide-react'
-import { fmtEur, fmtNum } from '../lib/data'
+import { Check, Plus, Pencil, AlertCircle, HelpCircle } from 'lucide-react'
+import { fmtEur, fmtNum, SCORE_WEIGHTS } from '../lib/data'
+
+const TONES = {
+  emerald: 'bg-emerald-50 text-emerald-700',
+  amber: 'bg-amber-50 text-amber-700',
+  rose: 'bg-rose-50 text-rose-700',
+  slate: 'bg-slate-100 text-slate-500',
+}
+
+function ScoreBadge({ row }) {
+  const [open, setOpen] = useState(false)
+  const b = row.breakdown
+  return (
+    <div className="relative flex items-center gap-1.5">
+      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${TONES[row.level.tone]}`}>{row.level.label}</span>
+      <button
+        onClick={() => setOpen((o) => !o)}
+        onBlur={() => setOpen(false)}
+        aria-label={`Détail du score de ${row.name}`}
+        className="text-slate-400 hover:text-indigo-600"
+      >
+        <HelpCircle size={15} />
+      </button>
+      {open && (
+        <div className="absolute left-0 top-6 z-10 w-72 rounded-lg border border-slate-200 bg-white p-3 text-xs leading-relaxed text-slate-600 shadow-lg">
+          <p className="font-semibold text-slate-900">
+            Score : {b.total} / 100 pour {row.name}
+          </p>
+          <ul className="mt-1.5 space-y-1">
+            <li>
+              Annonces Cimco actives : {row.nbAnnonces} sur {b.maxAnn} au maximum, soit {b.annonces} / {SCORE_WEIGHTS.annonces} points
+            </li>
+            <li>
+              Population : {row.population ? `${fmtNum(row.population)} habitants (échelle logarithmique, maximum ${fmtNum(b.maxPop)})` : 'indisponible'}, soit {b.population} / {SCORE_WEIGHTS.population} points
+            </li>
+          </ul>
+          <p className="mt-2 text-slate-400">Haute : 75 et plus. Moyenne : 55 à 74. Basse : moins de 55. « À évaluer » tant que la population est inconnue.</p>
+        </div>
+      )}
+    </div>
+  )
+}
 
 const FILTERS = [
   ['all', 'Toutes'],
@@ -18,7 +59,7 @@ export default function Queue({ rows, geoState, onOpen }) {
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
         <div>
           <h2 className="font-semibold">File de priorité</h2>
-          <p className="text-xs text-slate-500">Classement : annonces Cimco actives puis population (geo.api.gouv.fr)</p>
+          <p className="text-xs text-slate-500">Score sur 100 : annonces Cimco actives (30 points) + population de la commune (70 points, geo.api.gouv.fr). Cliquez sur ? pour le détail.</p>
         </div>
         <div className="flex gap-1 rounded-lg bg-slate-100 p-1">
           {FILTERS.map(([id, label]) => (
@@ -62,12 +103,7 @@ export default function Queue({ rows, geoState, onOpen }) {
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.population ? fmtNum(r.population) : <span className="text-slate-300">n.d.</span>}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{fmtEur(r.annonce.budget)}</td>
                 <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
-                      <div className="h-full rounded-full bg-indigo-500" style={{ width: r.score + '%' }} />
-                    </div>
-                    <span className="text-xs tabular-nums text-slate-500">{r.score}</span>
-                  </div>
+                  <ScoreBadge row={r} />
                 </td>
                 <td className="px-4 py-2.5">
                   {r.status === 'traitee' ? (
