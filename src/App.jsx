@@ -7,6 +7,7 @@ import { buildTemplatePage, buildSections } from './lib/page'
 import Banner from './components/Banner'
 import Queue from './components/Queue'
 import Editor from './components/Editor'
+import SitePreview from './components/SitePreview'
 
 const STATUS_KEY = 'cimco.status.v1'
 const PAGES_KEY = 'cimco.pages.v1'
@@ -160,6 +161,19 @@ export default function App() {
     setSelected(name)
     setTab('editor')
   }
+  // Route "#/apercu/{commune}?device=mobile" : page d'aperçu autonome (nouvel onglet)
+  const [hash, setHash] = useState(() => location.hash)
+  useEffect(() => {
+    const on = () => setHash(location.hash)
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
+  const route = hash.match(/^#\/apercu\/([^?]+)(?:\?device=(\w+))?/)
+  if (route) {
+    const target = ranked.find((c) => c.name === decodeURIComponent(route[1]))
+    if (target) return <SitePreview key={target.name} name={target.name} s={sectionsFor(target)} initialDevice={route[2]} />
+  }
+
   const current = ranked.find((c) => c.name === (selected || nextCommune?.name)) || ranked[0]
 
   return (
