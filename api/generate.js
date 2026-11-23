@@ -67,58 +67,58 @@ export default async function handler(req, res) {
     .filter(Boolean)
     .join('\n\n')
 
+  // Clé "AQ." : Vertex AI Express ; clé classique "AIza..." : AI Studio
+  const isVertex = !!geminiKey && geminiKey.startsWith('AQ.')
+  const geminiUrl = (model) =>
+    isVertex
+      ? `https://aiplatform.googleapis.com/v1/publishers/google/models/${model}:generateContent?key=${geminiKey}`
+      : `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`
+  const geminiCall = (model) =>
+    fetch(geminiUrl(model), {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
+      }),
+      signal: AbortSignal.timeout(55000),
+    })
+  const geminiText = async (r) => ((await r.json()).candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+
   // gemini-2.5-flash en premier ; si le modèle est introuvable (404), on essaie l'alias et les suivants
-  const geminiModels = [...new Set([process.env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'].filter(Boolean))]
+  const geminiModels = [...new Set([process.env.GEMINI_MODEL, 'gemini-2.5-flash', ...(isVertex ? [] : ['gemini-flash-latest', 'gemini-2.0-flash'])].filter(Boolean))]
   const viaGemini = async () => {
     let last = 'gemini_error'
     for (const model of geminiModels) {
-      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: SYSTEM }] },
-          contents: [{ role: 'user', parts: [{ text: user }] }],
-          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
-        }),
-        signal: AbortSignal.timeout(55000),
-      })
-      if (r.status === 404) {
-        last = 'gemini_404'
-        continue
-      }
-      if (!r.ok) throw new Error('gemini_' + r.status)
-      const j = await r.json()
-      return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+      const r = await geminiCall(model)
+      if (r.ok) return geminiText(r)
+      console.error('Gemini API error:', r.status, await r.text())
+      last = 'gemini_' + r.status
+      if (r.status !== 404) throw new Error(last)
     }
-    // Aucun nom connu ne passe : on demande à Google la liste des modèles disponibles pour cette clé
-    try {
-      const lr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}&pageSize=100`, { signal: AbortSignal.timeout(15000) })
-      if (lr.ok) {
-        const list = ((await lr.json()).models || [])
-          .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
-          .map((m) => String(m.name).replace(/^models\//, ''))
-          .filter((n) => /flash/.test(n) && !/(image|tts|live|audio|thinking|lite)/.test(n) && !geminiModels.includes(n))
-        for (const model of list.slice(0, 3)) {
-          const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
-            method: 'POST',
-            headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({
-              systemInstruction: { parts: [{ text: SYSTEM }] },
-              contents: [{ role: 'user', parts: [{ text: user }] }],
-              generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
-            }),
-            signal: AbortSignal.timeout(55000),
-          })
-          if (!r.ok) continue
-          const j = await r.json()
-          return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+    if (!isVertex) {
+      // Aucun nom connu ne passe : on demande à Google la liste des modèles disponibles pour cette clé
+      try {
+        const lr = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${geminiKey}&pageSize=100`, { signal: AbortSignal.timeout(15000) })
+        if (lr.ok) {
+          const list = ((await lr.json()).models || [])
+            .filter((m) => (m.supportedGenerationMethods || []).includes('generateContent'))
+            .map((m) => String(m.name).replace(/^models\//, ''))
+            .filter((n) => /flash/.test(n) && !/(image|tts|live|audio|thinking|lite)/.test(n) && !geminiModels.includes(n))
+          for (const model of list.slice(0, 3)) {
+            const r = await geminiCall(model)
+            if (r.ok) return geminiText(r)
+            console.error('Gemini API error:', r.status, await r.text())
+          }
+          last = list.length ? 'gemini_404_aucun_modele_utilisable' : 'gemini_404_aucun_modele_flash'
+        } else {
+          console.error('Gemini API error:', lr.status, await lr.text())
+          last = 'gemini_404_liste_' + lr.status
         }
-        last = list.length ? 'gemini_404_aucun_modele_utilisable' : 'gemini_404_aucun_modele_flash'
-      } else {
-        last = 'gemini_404_liste_' + lr.status
+      } catch {
+        /* on garde last */
       }
-    } catch {
-      /* on garde last */
     }
     throw new Error(last)
   }
