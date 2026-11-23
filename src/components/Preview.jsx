@@ -113,7 +113,7 @@ export default function Preview({ s }) {
             <input className="rounded-lg border border-indigo-100 bg-white px-3 py-2 text-sm sm:col-span-2" placeholder="E-mail" />
             <button className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white sm:col-span-2">Demander à être rappelé</button>
           </form>
-          <p className="mt-2 text-xs text-indigo-700">Aperçu : le formulaire réel est un module HubSpot.</p>
+          <p className="mt-2 text-xs text-indigo-700">{s.ctaNote}</p>
         </section>
       </div>
     </article>

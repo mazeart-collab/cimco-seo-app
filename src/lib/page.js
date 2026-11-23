@@ -136,6 +136,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     faqTitle: `Questions fréquentes sur la construction à ${c.name}`,
     faq,
     ctaTitle: 'Demander à être rappelé',
+    ctaNote: 'Aperçu de démonstration : à remplacer par le module formulaire HubSpot en production.',
   }
 }
 
@@ -149,7 +150,7 @@ export function sectionsText(s) {
     ...s.breakdown.flatMap((b) => [b.label, b.value]),
     s.whyTitle, s.why, ...s.whyPoints,
     s.faqTitle, ...s.faq.flatMap((f) => [f.q, f.a]),
-    s.ctaTitle,
+    s.ctaTitle, s.ctaNote,
   ].join(' ')
 }
 
@@ -205,6 +206,15 @@ const STYLE = `<style>
 .cimco-local details{border:1px solid var(--cimco-line);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem}
 .cimco-local summary{cursor:pointer;font-weight:600}
 .cimco-local .cl-cta{background:var(--cimco-soft);border-radius:12px;padding:1.5rem;margin-top:2rem}
+.cimco-local .cl-cta h2{margin-top:0}
+.cimco-local .cl-form{display:grid;grid-template-columns:1fr;gap:.75rem}
+.cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:8px;padding:.6rem .75rem;font:inherit;background:#fff}
+.cimco-local .cl-form input:focus{outline:2px solid var(--cimco-primary);outline-offset:1px}
+.cimco-local .cl-form .cl-full{grid-column:1/-1}
+.cimco-local .cl-form button{grid-column:1/-1;border:0;border-radius:8px;padding:.7rem 1rem;font:inherit;font-weight:600;color:#fff;background:var(--cimco-primary);cursor:pointer}
+.cimco-local .cl-form button:hover{filter:brightness(.92)}
+.cimco-local .cl-demo{font-size:.75rem;color:#64748b;margin:.5rem 0 0}
+@media(min-width:600px){.cimco-local .cl-form{grid-template-columns:1fr 1fr}}
 </style>`
 
 export function pageToHtml(s, mode = 'raw') {
@@ -256,7 +266,19 @@ ${faq}
 
   <${standalone ? 'div class="cl-cta"' : 'div'}>
     <h2>${esc(s.ctaTitle)}</h2>
-    <!-- Collez ici le module formulaire HubSpot "Demander à être rappelé" -->
+${standalone ? `    <form class="cl-form" onsubmit="return false;">
+      <input type="text" name="nom" placeholder="Nom" aria-label="Nom">
+      <input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone">
+      <input class="cl-full" type="email" name="email" placeholder="E-mail" aria-label="E-mail">
+      <button type="submit">Demander à être rappelé</button>
+    </form>
+    <p class="cl-demo">${esc(s.ctaNote)}</p>` : `    <form onsubmit="return false;">
+      <p><input type="text" name="nom" placeholder="Nom" aria-label="Nom"></p>
+      <p><input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone"></p>
+      <p><input type="email" name="email" placeholder="E-mail" aria-label="E-mail"></p>
+      <p><button type="submit">Demander à être rappelé</button></p>
+    </form>
+    <p><small>${esc(s.ctaNote)}</small></p>`}
   </div>
 </div>`
   return standalone ? `${STYLE}\n${body}` : body
