@@ -208,40 +208,50 @@ const CREDIT_CSS = `.cimco-local .cimco-photo{position:relative}
 .cimco-local .cimco-credit:hover .cimco-credit-tip,.cimco-local .cimco-credit:focus .cimco-credit-tip{display:block}`
 
 const STYLE = `<style>
-/* Charte relevée sur cimco.fr (fond #fbfaf8, encre #1a1a18, accent #4a6a78) ; si le thème charge déjà Manrope et Poppins, elles s'appliquent d'elles-mêmes */
-.cimco-local{--cimco-primary:#4a6a78;--cimco-accent:#8fabb9;--cimco-dark:#1a1a18;--cimco-soft:#f4f3ef;--cimco-line:#1a1a1812;max-width:960px;margin:0 auto;color:var(--cimco-dark);font:16px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
+/* Charte relevée sur cimco.fr (fond #fbfaf8, encre #1a1a18, accent #8fabb9 / #4a6a78) ; si le thème charge déjà Manrope et Poppins, elles s'appliquent d'elles-mêmes */
+.cimco-local{--cimco-primary:#4a6a78;--cimco-accent:#8fabb9;--cimco-dark:#1a1a18;--cimco-bg:#fbfaf8;--cimco-alt:#f4f3ef;--cimco-tint:#cfe3ec;--cimco-line:#1a1a1812;color:var(--cimco-dark);background:var(--cimco-bg);font:16px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
 .cimco-local *{box-sizing:border-box}
 .cimco-local h1,.cimco-local h2,.cimco-local h3{font-family:"Manrope",system-ui,-apple-system,sans-serif;letter-spacing:-.01em}
-.cimco-local h1{font-size:2rem;line-height:1.2;margin:0 0 .75rem}
-.cimco-local h2{font-size:1.35rem;margin:2rem 0 .75rem}
+.cimco-local h1{font-size:2.25rem;line-height:1.15;margin:0 0 .75rem}
+.cimco-local h2{font-size:1.5rem;line-height:1.25;margin:0 0 1rem}
+.cimco-local h2::before{content:"";display:block;width:2.5rem;height:3px;border-radius:3px;background:var(--cimco-accent);margin-bottom:.7rem}
 .cimco-local p{margin:0 0 1rem}
-.cimco-local .cl-hero{background:var(--cimco-dark);color:#fff;border-radius:24px;padding:2rem}
-.cimco-local .cl-hero p{margin:0;color:#cfe3ec}
+.cimco-local .cl-band{padding:3rem 1.5rem}
+.cimco-local .cl-inner{max-width:960px;margin:0 auto}
+.cimco-local .cl-band--dark{background:var(--cimco-dark);color:#fff}
+.cimco-local .cl-band--dark p{color:var(--cimco-tint)}
+.cimco-local .cl-band--alt{background:var(--cimco-alt)}
+.cimco-local .cl-band--accent{background:var(--cimco-primary);color:#fff}
+.cimco-local .cl-band--accent h2::before{background:var(--cimco-tint)}
+.cimco-local .cl-band--soft{background:var(--cimco-tint)}
 .cimco-local .cl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
-.cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:16px;padding:1rem;background:#fff}
-.cimco-local a.cl-card{display:block;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s}
-.cimco-local a.cl-card:hover{border-color:var(--cimco-primary);box-shadow:0 4px 14px rgba(15,23,42,.1)}
-.cimco-local .cl-more{font-size:.75rem;color:#64748b;margin-top:.25rem}
-.cimco-local .cl-card.is-here{border-color:var(--cimco-primary);background:var(--cimco-soft)}
-.cimco-local .cl-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
-.cimco-local .cl-value{font-size:1.25rem;font-weight:700}
-.cimco-local .cl-ref{font-size:.75rem;color:#94a3b8;margin-top:.5rem}
-.cimco-local .cl-figure{margin:1rem 0 0}
+.cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:24px;padding:1.25rem;background:#fff}
+.cimco-local a.cl-card{display:block;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s,transform .15s}
+.cimco-local a.cl-card:hover{border-color:var(--cimco-primary);box-shadow:0 10px 28px rgba(26,26,24,.12);transform:translateY(-2px)}
+.cimco-local .cl-more{font-size:.75rem;color:#57534c;margin-top:.25rem}
+.cimco-local .cl-card.is-here{border-color:var(--cimco-primary);box-shadow:inset 0 0 0 1px var(--cimco-primary)}
+.cimco-local .cl-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#6b665e}
+.cimco-local .cl-value{font-family:"Manrope",system-ui,sans-serif;font-size:1.4rem;font-weight:800;color:var(--cimco-primary)}
+.cimco-local .cl-ref{font-size:.75rem;color:#6b665e;margin-top:.5rem}
+.cimco-local .cl-figure{margin:1.5rem 0 0}
 .cimco-local .cl-figure img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;border-radius:24px}
 ${CREDIT_CSS}
-.cimco-local .cl-note{font-size:.8rem;color:#64748b}
-.cimco-local ul.cl-list{padding-left:1.2rem}
-.cimco-local details{border:1px solid var(--cimco-line);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem}
+.cimco-local .cl-note{font-size:.8rem;color:#6b665e}
+.cimco-local ul.cl-list{list-style:none;margin:1rem 0 0;padding:0;background:#fff;border:1px solid var(--cimco-line);border-radius:24px;overflow:hidden}
+.cimco-local ul.cl-list li{padding:.85rem 1.25rem;border-top:1px solid var(--cimco-line)}
+.cimco-local ul.cl-list li:first-child{border-top:0}
+.cimco-local ul.cl-points{list-style:none;margin:1rem 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem}
+.cimco-local ul.cl-points li{background:rgba(255,255,255,.14);border-radius:16px;padding:.9rem 1.1rem;font-weight:600}
+.cimco-local details{background:#fff;border:1px solid var(--cimco-line);border-radius:20px;padding:1rem 1.25rem;margin-bottom:.6rem}
 .cimco-local summary{cursor:pointer;font-weight:600}
-.cimco-local .cl-cta{background:var(--cimco-soft);border-radius:24px;padding:1.5rem;margin-top:2rem}
-.cimco-local .cl-cta h2{margin-top:0}
+.cimco-local details p{margin:.6rem 0 0;color:#57534c}
 .cimco-local .cl-form{display:grid;grid-template-columns:1fr;gap:.75rem}
-.cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:8px;padding:.6rem .75rem;font:inherit;background:#fff}
+.cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:14px;padding:.7rem .9rem;font:inherit;background:#fff}
 .cimco-local .cl-form input:focus{outline:2px solid var(--cimco-primary);outline-offset:1px}
 .cimco-local .cl-form .cl-full{grid-column:1/-1}
-.cimco-local .cl-form button{grid-column:1/-1;border:0;border-radius:8px;padding:.7rem 1rem;font:inherit;font-weight:600;color:#fff;background:var(--cimco-primary);cursor:pointer}
+.cimco-local .cl-form button{grid-column:1/-1;border:0;border-radius:999px;padding:.85rem 1rem;font:inherit;font-weight:700;color:#fff;background:var(--cimco-primary);cursor:pointer}
 .cimco-local .cl-form button:hover{filter:brightness(.92)}
-.cimco-local .cl-demo{font-size:.75rem;color:#64748b;margin:.5rem 0 0}
+.cimco-local .cl-demo{font-size:.75rem;color:#57534c;margin:.75rem 0 0}
 @media(min-width:600px){.cimco-local .cl-form{grid-template-columns:1fr 1fr}}
 </style>`
 
@@ -274,8 +284,43 @@ export function pageToHtml(s, mode = 'raw') {
     ? `  <ul${standalone ? ' class="cl-list"' : ''}>\n${s.breakdown.map((b) => `    <li>${esc(b.label)} : <strong>${esc(b.value)}</strong></li>`).join('\n')}\n  </ul>`
     : ''
 
+  const whyList = standalone
+    ? `<ul class="cl-points">\n${s.whyPoints.map((p) => `      <li>${esc(p)}</li>`).join('\n')}\n    </ul>`
+    : `<ul>\n${s.whyPoints.map((p) => `    <li>${esc(p)}</li>`).join('\n')}\n  </ul>`
+
+  const form = standalone
+    ? `<form class="cl-form" onsubmit="return false;">
+      <input type="text" name="nom" placeholder="Nom" aria-label="Nom">
+      <input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone">
+      <input class="cl-full" type="email" name="email" placeholder="E-mail" aria-label="E-mail">
+      <button type="submit">Demander à être rappelé</button>
+    </form>
+    <p class="cl-demo">${esc(s.ctaNote)}</p>`
+    : `<form onsubmit="return false;">
+      <p><input type="text" name="nom" placeholder="Nom" aria-label="Nom"></p>
+      <p><input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone"></p>
+      <p><input type="email" name="email" placeholder="E-mail" aria-label="E-mail"></p>
+      <p><button type="submit">Demander à être rappelé</button></p>
+    </form>
+    <p><small>${esc(s.ctaNote)}</small></p>`
+
+  const band = (mod, inner) => `  <section class="cl-band${mod ? ` cl-band--${mod}` : ''}"><div class="cl-inner">\n${inner}\n  </div></section>`
+
+  if (standalone) {
+    const body = `<div class="cimco-local">
+${band('dark', `    <h1>${esc(s.h1)}</h1>\n    <p>${esc(s.intro)}</p>${figure}`)}
+${s.figures.length ? band('', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}`) + '\n' : ''}${band('alt', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}`)}
+${band('', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n${breakdown}`)}
+${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    ${whyList}`)}
+${band('alt', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
+${band('soft', `    <h2>${esc(s.ctaTitle)}</h2>\n    ${form}`)}
+</div>`
+    return `${STYLE}\n${body}`
+  }
+
   const body = `<div class="cimco-local">
-${standalone ? `  <div class="cl-hero"><h1>${esc(s.h1)}</h1><p>${esc(s.intro)}</p></div>${figure}` : `  <h1>${esc(s.h1)}</h1>${figure}\n  <p>${esc(s.intro)}</p>`}
+  <h1>${esc(s.h1)}</h1>${figure}
+  <p>${esc(s.intro)}</p>
 
 ${s.figures.length ? `  <h2>${esc(s.figuresTitle)}</h2>\n  ${figures}\n\n` : ''}  <h2>${esc(s.localTitle)}</h2>
   <p>${esc(s.local)}</p>
@@ -287,29 +332,15 @@ ${breakdown}
 
   <h2>${esc(s.whyTitle)}</h2>
   <p>${esc(s.why)}</p>
-  <ul${standalone ? ' class="cl-list"' : ''}>
-${s.whyPoints.map((p) => `    <li>${esc(p)}</li>`).join('\n')}
-  </ul>
+  ${whyList}
 
   <h2>${esc(s.faqTitle)}</h2>
 ${faq}
 
-  <${standalone ? 'div class="cl-cta"' : 'div'}>
+  <div>
     <h2>${esc(s.ctaTitle)}</h2>
-${standalone ? `    <form class="cl-form" onsubmit="return false;">
-      <input type="text" name="nom" placeholder="Nom" aria-label="Nom">
-      <input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone">
-      <input class="cl-full" type="email" name="email" placeholder="E-mail" aria-label="E-mail">
-      <button type="submit">Demander à être rappelé</button>
-    </form>
-    <p class="cl-demo">${esc(s.ctaNote)}</p>` : `    <form onsubmit="return false;">
-      <p><input type="text" name="nom" placeholder="Nom" aria-label="Nom"></p>
-      <p><input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone"></p>
-      <p><input type="email" name="email" placeholder="E-mail" aria-label="E-mail"></p>
-      <p><button type="submit">Demander à être rappelé</button></p>
-    </form>
-    <p><small>${esc(s.ctaNote)}</small></p>`}
+    ${form}
   </div>
 </div>`
-  return standalone ? `${STYLE}\n${body}` : `${creditStyle}${body}`
+  return `${creditStyle}${body}`
 }

@@ -110,7 +110,7 @@ export default function SitePreview({ name, s, initialDevice = 'desktop' }) {
   const site = (
     <div className="@container min-h-screen bg-[#fbfaf8]">
       <SiteHeader />
-      <main className="mx-auto max-w-5xl px-3 pb-4 pt-6 @min-[640px]:px-6">
+      <main>
         <Preview s={s} />
       </main>
       <SiteFooter />
