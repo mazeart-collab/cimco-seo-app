@@ -11,20 +11,21 @@ export default function Preview({ s }) {
       </div>
 
       {s.image && (
-        <figure>
+        <figure className="relative">
           <img src={s.image.src} alt={s.image.alt} className="max-h-72 w-full object-cover" />
-          <figcaption className="border-b border-slate-100 px-6 py-2 text-xs text-slate-500">
-            {s.image.legend}
-            {s.image.credit && (
-              <>
-                . {s.image.credit} (
-                <a href={s.image.pageUrl} target="_blank" rel="noreferrer" className="text-indigo-600 underline">
-                  source
-                </a>
-                )
-              </>
-            )}
-          </figcaption>
+          {s.image.credit && (
+            <span
+              tabIndex={0}
+              role="note"
+              aria-label="Crédit photo"
+              className="group/credit absolute bottom-2 right-2 flex h-6 w-6 cursor-help items-center justify-center rounded-full bg-[#1a1a18]/55 text-xs font-semibold text-white outline-none hover:bg-[#1a1a18]/85 focus:bg-[#1a1a18]/85"
+            >
+              ?
+              <span className="absolute bottom-8 right-0 hidden w-max max-w-64 rounded-lg bg-[#1a1a18] px-2.5 py-1.5 text-left text-xs font-normal leading-snug group-hover/credit:block group-focus/credit:block">
+                {s.image.credit}
+              </span>
+            </span>
+          )}
         </figure>
       )}
 

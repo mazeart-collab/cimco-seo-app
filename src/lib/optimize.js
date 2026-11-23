@@ -1,6 +1,6 @@
 const MAX_WIDTH = 1200
-const QUALITIES = [0.82, 0.75, 0.68, 0.6]
-const FALLBACK_WIDTHS = [1000, 800, 640] // dernier recours si 100 Ko ne tient pas à la qualité 0.60
+const QUALITIES = [0.82, 0.75, 0.68, 0.6, 0.5]
+const FALLBACK_WIDTHS = [1000, 800, 640] // dernier recours si 100 Ko ne tient pas à la qualité 0.50
 export const MAX_BYTES = 100 * 1024
 
 export const slugify = (s) =>
@@ -38,12 +38,12 @@ const encode = (bitmap, width, quality) => {
 }
 
 // Redimensionne (1200 px max, sans agrandir) et exporte en WebP, en visant 100 Ko maximum :
-// qualité 0.82, puis 0.75, 0.68, 0.60 ; si ce n'est pas assez, la largeur est réduite à qualité 0.60.
+// qualité 0.82, puis 0.75, 0.68, 0.60, 0.50 ; si ce n'est pas assez, la largeur est réduite à qualité 0.50.
 export async function optimizeImage(url) {
   const source = await loadBlob(url)
   const bitmap = await createImageBitmap(source)
   const full = Math.min(1200, bitmap.width)
-  const attempts = [...QUALITIES.map((q) => [full, q]), ...FALLBACK_WIDTHS.filter((w) => w < full).map((w) => [w, 0.6])]
+  const attempts = [...QUALITIES.map((q) => [full, q]), ...FALLBACK_WIDTHS.filter((w) => w < full).map((w) => [w, 0.5])]
   let result
   for (const [w, q] of attempts) {
     result = await encode(bitmap, w, q)

@@ -1,5 +1,9 @@
 import { fmtEur, fmtNum } from './data'
 
+// Crédit court : saisi à la main s'il existe (même vide), sinon celui de Wikimedia Commons
+export const creditOf = (photo) =>
+  photo.creditText !== undefined ? photo.creditText.trim() : photo.manual ? '' : `Photo : ${photo.artist}, licence ${photo.license}`
+
 export const LISTINGS_URL = 'https://cimco.fr/annonces-maisons-terrains'
 
 // ---------- Texte par défaut (données réelles uniquement) ----------
@@ -128,9 +132,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     ? {
         src: photo.url,
         alt: `Vue de ${c.name} (${c.dep}) - faire construire avec Cimco`,
-        legend: photo.legend,
-        credit: photo.manual ? '' : `Photo : ${photo.artist}, ${photo.license}, via Wikimedia Commons`,
-        pageUrl: photo.pageUrl,
+        credit: creditOf(photo),
         width: photo.width,
         height: photo.height,
       }
@@ -160,7 +162,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
 
 export function sectionsText(s) {
   return [
-    s.h1, ...(s.image ? [s.image.alt, s.image.legend, s.image.credit].filter(Boolean) : []), s.intro, s.figuresTitle,
+    s.h1, ...(s.image ? [s.image.alt, s.image.credit].filter(Boolean) : []), s.intro, s.figuresTitle,
     ...s.figures.flatMap((f) => [f.label, f.value, f.note]),
     s.localTitle, s.local,
     ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`, 'Voir sur cimco.fr →']),
@@ -198,6 +200,13 @@ export function jaccard(a, b) {
 
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
+// Badge "?" de crédit photo : infobulle en pur CSS (survol et focus clavier)
+const CREDIT_CSS = `.cimco-local .cimco-photo{position:relative}
+.cimco-local .cimco-credit{position:absolute;right:.6rem;bottom:.6rem;width:1.5rem;height:1.5rem;border-radius:50%;background:rgba(26,26,24,.55);color:#fff;font:600 .8rem/1.5rem system-ui,sans-serif;text-align:center;cursor:help;outline:none}
+.cimco-local .cimco-credit:hover,.cimco-local .cimco-credit:focus{background:rgba(26,26,24,.85)}
+.cimco-local .cimco-credit-tip{display:none;position:absolute;right:0;bottom:2rem;width:max-content;max-width:min(16rem,70vw);background:#1a1a18;color:#fff;border-radius:8px;padding:.4rem .6rem;font:400 .75rem/1.35 system-ui,sans-serif;text-align:left}
+.cimco-local .cimco-credit:hover .cimco-credit-tip,.cimco-local .cimco-credit:focus .cimco-credit-tip{display:block}`
+
 const STYLE = `<style>
 /* Charte relevée sur cimco.fr (fond #fbfaf8, encre #1a1a18, accent #4a6a78) ; si le thème charge déjà Manrope et Poppins, elles s'appliquent d'elles-mêmes */
 .cimco-local{--cimco-primary:#4a6a78;--cimco-accent:#8fabb9;--cimco-dark:#1a1a18;--cimco-soft:#f4f3ef;--cimco-line:#1a1a1812;max-width:960px;margin:0 auto;color:var(--cimco-dark);font:16px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
@@ -219,7 +228,7 @@ const STYLE = `<style>
 .cimco-local .cl-ref{font-size:.75rem;color:#94a3b8;margin-top:.5rem}
 .cimco-local .cl-figure{margin:1rem 0 0}
 .cimco-local .cl-figure img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;border-radius:24px}
-.cimco-local .cl-figure figcaption{font-size:.8rem;color:#64748b;margin-top:.4rem}
+${CREDIT_CSS}
 .cimco-local .cl-note{font-size:.8rem;color:#64748b}
 .cimco-local ul.cl-list{padding-left:1.2rem}
 .cimco-local details{border:1px solid var(--cimco-line);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem}
@@ -252,11 +261,14 @@ export function pageToHtml(s, mode = 'raw') {
 
   const figure = s.image
     ? `
-  <figure${standalone ? ' class="cl-figure"' : ''}>
-    <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" ${s.image.width ? `width="${s.image.width}" height="${s.image.height}" ` : ''}loading="lazy">
-    <figcaption>${esc(s.image.legend)}${s.image.credit ? `. ${esc(s.image.credit)} (<a href="${esc(s.image.pageUrl)}" rel="noopener">source</a>)` : ''}</figcaption>
+  <figure class="cimco-photo${standalone ? ' cl-figure' : ''}">
+    <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" ${s.image.width ? `width="${s.image.width}" height="${s.image.height}" ` : ''}loading="lazy">${
+      s.image.credit ? `\n    <span class="cimco-credit" tabindex="0" role="note" aria-label="Crédit photo">?<span class="cimco-credit-tip">${esc(s.image.credit)}</span></span>` : ''
+    }
   </figure>`
     : ''
+  // Sans CSS dans le thème, l'export brut embarque uniquement le style du badge (et seulement s'il y a un crédit)
+  const creditStyle = !standalone && s.image?.credit ? `<style>\n${CREDIT_CSS}\n</style>\n` : ''
 
   const breakdown = s.breakdown.length
     ? `  <ul${standalone ? ' class="cl-list"' : ''}>\n${s.breakdown.map((b) => `    <li>${esc(b.label)} : <strong>${esc(b.value)}</strong></li>`).join('\n')}\n  </ul>`
@@ -299,5 +311,5 @@ ${standalone ? `    <form class="cl-form" onsubmit="return false;">
     <p><small>${esc(s.ctaNote)}</small></p>`}
   </div>
 </div>`
-  return standalone ? `${STYLE}\n${body}` : body
+  return standalone ? `${STYLE}\n${body}` : `${creditStyle}${body}`
 }

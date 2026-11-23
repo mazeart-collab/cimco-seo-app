@@ -4,7 +4,7 @@ import Preview from './Preview'
 import { fmtEur, fmtNum } from '../lib/data'
 import { fetchDvf, generate, cachedDvf, fetchPhotos, cachedPhotos } from '../lib/api'
 import { optimizeImage, download, seoFileName, formatKo } from '../lib/optimize'
-import { jaccard, sectionsText, pageToHtml } from '../lib/page'
+import { jaccard, creditOf, sectionsText, pageToHtml } from '../lib/page'
 
 const THRESHOLD = 0.4
 
@@ -33,7 +33,14 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
   useEffect(() => setOpt({ state: 'idle' }), [selectedPhoto?.url])
   const [manualUrl, setManualUrl] = useState('')
   const [manualError, setManualError] = useState(false)
+  const [creditInput, setCreditInput] = useState(() => (selectedPhoto ? creditOf(selectedPhoto) : ''))
+  useEffect(() => setCreditInput(selectedPhoto ? creditOf(selectedPhoto) : ''), [selectedPhoto?.url])
   const applyManual = () => {
+    // Sans URL : met seulement à jour le crédit de la photo déjà choisie
+    if (!manualUrl.trim() && selectedPhoto) {
+      setManualError(false)
+      return onPhoto(c.name, { ...selectedPhoto, creditText: creditInput.trim() })
+    }
     let u
     try {
       u = new URL(manualUrl.trim())
@@ -42,7 +49,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     }
     if (!u || !['http:', 'https:'].includes(u.protocol)) return setManualError(true)
     setManualError(false)
-    onPhoto(c.name, { url: u.href, legend: `Vue de ${c.name}`, manual: true })
+    onPhoto(c.name, { url: u.href, legend: `Vue de ${c.name}`, manual: true, creditText: creditInput.trim() })
     setManualUrl('')
   }
 
@@ -280,8 +287,18 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
                 Appliquer
               </button>
             </div>
+            <label htmlFor="img-credit" className="mt-2 block text-xs font-medium text-slate-600">
+              Crédit photo (optionnel)
+            </label>
+            <input
+              id="img-credit"
+              value={creditInput}
+              onChange={(e) => setCreditInput(e.target.value)}
+              placeholder="Photo : Jean Dupont"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-indigo-400"
+            />
             {manualError && <p className="mt-1 text-xs text-rose-600">URL invalide : elle doit commencer par http:// ou https://.</p>}
-            <p className="mt-1 text-xs text-slate-400">Vérifiez vous-même les droits d'utilisation de l'image : aucun crédit n'est ajouté pour une image saisie à la main.</p>
+            <p className="mt-1 text-xs text-slate-400">Vérifiez vous-même les droits d'utilisation de l'image. Sans crédit, aucun badge ? n'est affiché. Avec une photo déjà choisie, « Appliquer » sans URL met à jour son crédit.</p>
           </div>
           {selectedPhoto && (
             <div className="mt-3">
