@@ -1,4 +1,5 @@
-// Fonction serveur : la clé ANTHROPIC_API_KEY reste côté serveur, jamais dans le code client.
+// Fonction serveur : les clés GEMINI_API_KEY / ANTHROPIC_API_KEY restent côté serveur, jamais dans le code client.
+// Ordre : Gemini si GEMINI_API_KEY, sinon Anthropic si ANTHROPIC_API_KEY, sinon le client bascule sur le template.
 const MODEL = 'claude-opus-5-5'
 const PER_IP_DAILY = 20
 const GLOBAL_DAILY = 200
@@ -36,8 +37,9 @@ Réponds uniquement avec un objet JSON : {"intro": string, "local": string, "bud
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' })
 
-  const key = process.env.ANTHROPIC_API_KEY
-  if (!key) return res.status(503).json({ error: 'no_key' })
+  const geminiKey = process.env.GEMINI_API_KEY
+  const anthropicKey = process.env.ANTHROPIC_API_KEY
+  if (!geminiKey && !anthropicKey) return res.status(503).json({ error: 'no_key' })
 
   const ip = short(req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown', 80).split(',')[0].trim()
   if (!checkLimit(ip)) {
@@ -65,12 +67,28 @@ export default async function handler(req, res) {
     .filter(Boolean)
     .join('\n\n')
 
-  try {
+  const viaGemini = async () => {
+    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM }] },
+        contents: [{ role: 'user', parts: [{ text: user }] }],
+        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
+      }),
+      signal: AbortSignal.timeout(55000),
+    })
+    if (!r.ok) throw new Error('gemini_' + r.status)
+    const j = await r.json()
+    return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+  }
+
+  const viaAnthropic = async () => {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': key,
+        'x-api-key': anthropicKey,
         'anthropic-version': '2023-06-01',
         'anthropic-beta': 'server-side-fallback-2026-07-01',
       },
@@ -84,17 +102,29 @@ export default async function handler(req, res) {
       }),
       signal: AbortSignal.timeout(55000),
     })
-    if (!r.ok) return res.status(502).json({ error: 'upstream_' + r.status })
+    if (!r.ok) throw new Error('upstream_' + r.status)
     const msg = await r.json()
-    if (msg.stop_reason === 'refusal') return res.status(502).json({ error: 'refusal' })
-    const text = (msg.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('')
-    const match = text.match(/\{[\s\S]*\}/)
-    const parsed = match ? JSON.parse(match[0]) : null
-    if (!parsed?.intro || !parsed?.local || !parsed?.budget) return res.status(502).json({ error: 'bad_output' })
-    return res.status(200).json({
-      page: { intro: short(parsed.intro, 2000), local: short(parsed.local, 2000), budget: short(parsed.budget, 2000) },
-    })
-  } catch {
-    return res.status(502).json({ error: 'generation_failed' })
+    if (msg.stop_reason === 'refusal') throw new Error('refusal')
+    return (msg.content || []).filter((c) => c.type === 'text').map((c) => c.text).join('')
   }
+
+  const providers = [geminiKey && viaGemini, anthropicKey && viaAnthropic].filter(Boolean)
+  let lastError = 'generation_failed'
+  for (const run of providers) {
+    try {
+      const text = await run()
+      const match = text.match(/\{[\s\S]*\}/)
+      const parsed = match ? JSON.parse(match[0]) : null
+      if (!parsed?.intro || !parsed?.local || !parsed?.budget) {
+        lastError = 'bad_output'
+        continue
+      }
+      return res.status(200).json({
+        page: { intro: short(parsed.intro, 2000), local: short(parsed.local, 2000), budget: short(parsed.budget, 2000) },
+      })
+    } catch (e) {
+      lastError = String(e.message || 'generation_failed').slice(0, 40)
+    }
+  }
+  return res.status(502).json({ error: lastError })
 }
