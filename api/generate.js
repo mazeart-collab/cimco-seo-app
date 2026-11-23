@@ -67,20 +67,30 @@ export default async function handler(req, res) {
     .filter(Boolean)
     .join('\n\n')
 
+  // gemini-2.5-flash en premier ; si le modèle est introuvable (404), on essaie l'alias et les suivants
+  const geminiModels = [...new Set([process.env.GEMINI_MODEL, 'gemini-2.5-flash', 'gemini-flash-latest', 'gemini-2.0-flash'].filter(Boolean))]
   const viaGemini = async () => {
-    const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        systemInstruction: { parts: [{ text: SYSTEM }] },
-        contents: [{ role: 'user', parts: [{ text: user }] }],
-        generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
-      }),
-      signal: AbortSignal.timeout(55000),
-    })
-    if (!r.ok) throw new Error('gemini_' + r.status)
-    const j = await r.json()
-    return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+    let last = 'gemini_error'
+    for (const model of geminiModels) {
+      const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: SYSTEM }] },
+          contents: [{ role: 'user', parts: [{ text: user }] }],
+          generationConfig: { responseMimeType: 'application/json', maxOutputTokens: 4000 },
+        }),
+        signal: AbortSignal.timeout(55000),
+      })
+      if (r.status === 404) {
+        last = 'gemini_404'
+        continue
+      }
+      if (!r.ok) throw new Error('gemini_' + r.status)
+      const j = await r.json()
+      return (j.candidates?.[0]?.content?.parts || []).map((p) => p.text || '').join('')
+    }
+    throw new Error(last)
   }
 
   const viaAnthropic = async () => {
