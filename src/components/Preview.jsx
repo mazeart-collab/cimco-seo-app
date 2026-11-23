@@ -10,6 +10,19 @@ export default function Preview({ s }) {
         <p className="mt-3 text-sm leading-relaxed text-slate-300">{s.intro}</p>
       </div>
 
+      {s.image && (
+        <figure>
+          <img src={s.image.src} alt={s.image.alt} className="max-h-72 w-full object-cover" />
+          <figcaption className="border-b border-slate-100 px-6 py-2 text-xs text-slate-500">
+            {s.image.legend}. {s.image.credit} (
+            <a href={s.image.pageUrl} target="_blank" rel="noreferrer" className="text-indigo-600 underline">
+              source
+            </a>
+            )
+          </figcaption>
+        </figure>
+      )}
+
       <div className="space-y-8 p-6">
         <section>
           <h2 className="text-lg font-semibold">{s.figuresTitle}</h2>

@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info } from 'lucide-react'
+import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff } from 'lucide-react'
 import Preview from './Preview'
 import { fmtEur, fmtNum } from '../lib/data'
-import { fetchDvf, generate, cachedDvf } from '../lib/api'
+import { fetchDvf, generate, cachedDvf, fetchPhotos, cachedPhotos } from '../lib/api'
 import { jaccard, sectionsText, pageToHtml } from '../lib/page'
 
 const THRESHOLD = 0.4
 
-export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf }) {
+export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf, selectedPhoto, onPhoto }) {
   const code = c.info?.code
   const [dvf, setDvf] = useState(() => (code ? cachedDvf(code) : null))
   const [dvfState, setDvfState] = useState(dvf ? 'ok' : code ? 'loading' : 'nocode')
@@ -17,6 +17,24 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
   const [copied, setCopied] = useState(null)
 
   const sections = sectionsFor(c)
+
+  const [photos, setPhotos] = useState(() => cachedPhotos(c.name))
+  const [photoState, setPhotoState] = useState(photos ? 'ok' : 'loading')
+  useEffect(() => {
+    if (photos) return
+    let alive = true
+    fetchPhotos(c)
+      .then((p) => {
+        if (!alive) return
+        setPhotos(p)
+        setPhotoState('ok')
+      })
+      .catch(() => alive && setPhotoState('error'))
+    return () => {
+      alive = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     if (!code || dvf) return
@@ -177,6 +195,39 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
               </div>
             </div>
           </dl>
+        </section>
+
+        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <h3 className="text-sm font-semibold">Illustration de la commune</h3>
+          <p className="text-xs text-slate-500">Photos libres de Wikipédia et Wikimedia Commons. Cliquez sur une image pour l'inclure dans la page.</p>
+          {photoState === 'loading' && (
+            <p className="mt-3 flex items-center gap-2 text-xs text-slate-500">
+              <Loader2 size={14} className="animate-spin" /> Recherche de photos
+            </p>
+          )}
+          {photoState === 'error' && <p className="mt-3 text-xs text-amber-700">Wikimedia est momentanément injoignable. Réessayez plus tard.</p>}
+          {photoState === 'ok' && photos?.length === 0 && (
+            <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs text-slate-500">Aucune photo pertinente trouvée pour {c.name}. La page reste sans illustration.</p>
+          )}
+          {photoState === 'ok' && photos?.length > 0 && (
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              {photos.map((p) => (
+                <button
+                  key={p.url}
+                  onClick={() => onPhoto(c.name, p)}
+                  title={p.legend}
+                  className={`overflow-hidden rounded-lg border-2 ${selectedPhoto?.url === p.url ? 'border-indigo-600' : 'border-transparent hover:border-slate-300'}`}
+                >
+                  <img src={p.url} alt={p.legend} loading="lazy" className="aspect-[4/3] w-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
+          {selectedPhoto && (
+            <button onClick={() => onPhoto(c.name, null)} className="mt-3 flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
+              <ImageOff size={14} /> Aucune image
+            </button>
+          )}
         </section>
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">

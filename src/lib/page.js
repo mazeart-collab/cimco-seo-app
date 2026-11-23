@@ -43,7 +43,7 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
 
 // ---------- Structure de page complète (aperçu, HTML et similarité partagent la même source) ----------
 
-export function buildSections(c, page, dvf, neighbors) {
+export function buildSections(c, page, dvf, neighbors, photo = null) {
   const a = c.annonce
   const dvfLine = (agg, what) =>
     agg
@@ -102,8 +102,21 @@ export function buildSections(c, page, dvf, neighbors) {
     },
   ]
 
+  const image = photo
+    ? {
+        src: photo.url,
+        alt: `Vue de ${c.name} (${c.dep}) - faire construire avec Cimco`,
+        legend: photo.legend,
+        credit: `Photo : ${photo.artist}, ${photo.license}, via Wikimedia Commons`,
+        pageUrl: photo.pageUrl,
+        width: photo.width,
+        height: photo.height,
+      }
+    : null
+
   return {
     h1: page.h1,
+    image,
     intro: page.intro,
     figuresTitle: `${c.name} en chiffres`,
     figures,
@@ -124,7 +137,7 @@ export function buildSections(c, page, dvf, neighbors) {
 
 export function sectionsText(s) {
   return [
-    s.h1, s.intro, s.figuresTitle,
+    s.h1, ...(s.image ? [s.image.alt, s.image.legend, s.image.credit] : []), s.intro, s.figuresTitle,
     ...s.figures.flatMap((f) => [f.label, f.value, f.note]),
     s.localTitle, s.local,
     ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`]),
@@ -177,6 +190,9 @@ const STYLE = `<style>
 .cimco-local .cl-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
 .cimco-local .cl-value{font-size:1.25rem;font-weight:700}
 .cimco-local .cl-ref{font-size:.75rem;color:#94a3b8;margin-top:.5rem}
+.cimco-local .cl-figure{margin:1rem 0 0}
+.cimco-local .cl-figure img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;border-radius:12px}
+.cimco-local .cl-figure figcaption{font-size:.8rem;color:#64748b;margin-top:.4rem}
 .cimco-local .cl-note{font-size:.8rem;color:#64748b}
 .cimco-local ul.cl-list{padding-left:1.2rem}
 .cimco-local details{border:1px solid var(--cimco-line);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem}
@@ -198,8 +214,16 @@ export function pageToHtml(s, mode = 'raw') {
     ? s.faq.map((f) => `  <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('\n')
     : s.faq.map((f) => `  <h3>${esc(f.q)}</h3>\n  <p>${esc(f.a)}</p>`).join('\n')
 
+  const figure = s.image
+    ? `
+  <figure${standalone ? ' class="cl-figure"' : ''}>
+    <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" width="${s.image.width}" height="${s.image.height}" loading="lazy">
+    <figcaption>${esc(s.image.legend)}. ${esc(s.image.credit)} (<a href="${esc(s.image.pageUrl)}" rel="noopener">source</a>)</figcaption>
+  </figure>`
+    : ''
+
   const body = `<div class="cimco-local">
-${standalone ? `  <div class="cl-hero"><h1>${esc(s.h1)}</h1><p>${esc(s.intro)}</p></div>` : `  <h1>${esc(s.h1)}</h1>\n  <p>${esc(s.intro)}</p>`}
+${standalone ? `  <div class="cl-hero"><h1>${esc(s.h1)}</h1><p>${esc(s.intro)}</p></div>${figure}` : `  <h1>${esc(s.h1)}</h1>${figure}\n  <p>${esc(s.intro)}</p>`}
 
   <h2>${esc(s.figuresTitle)}</h2>
   ${figures}

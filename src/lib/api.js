@@ -47,3 +47,31 @@ export async function generate(payload) {
   if (res.status === 429) return { error: body?.message || 'Limite quotidienne atteinte.' }
   return { fallback: true, reason: body?.error || 'unavailable' }
 }
+
+const IMG_KEY = 'cimco.img.v1'
+const IMG_TTL = 7 * 24 * 3600 * 1000
+
+export const cachedPhotos = (name) => {
+  try {
+    const e = JSON.parse(localStorage.getItem(IMG_KEY))?.[name]
+    return e && Date.now() - e.ts < IMG_TTL ? e.photos : null
+  } catch {
+    return null
+  }
+}
+
+export async function fetchPhotos(commune) {
+  const hit = cachedPhotos(commune.name)
+  if (hit) return hit
+  const res = await fetch(`/api/images?${new URLSearchParams({ commune: commune.name, dep_name: commune.depName })}`)
+  if (!res.ok) throw new Error('images ' + res.status)
+  const { photos } = await res.json()
+  try {
+    const all = JSON.parse(localStorage.getItem(IMG_KEY)) || {}
+    all[commune.name] = { photos, ts: Date.now() }
+    localStorage.setItem(IMG_KEY, JSON.stringify(all))
+  } catch {
+    /* ignore */
+  }
+  return photos
+}

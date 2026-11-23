@@ -10,6 +10,7 @@ import Editor from './components/Editor'
 
 const STATUS_KEY = 'cimco.status.v1'
 const PAGES_KEY = 'cimco.pages.v1'
+const IMAGES_KEY = 'cimco.images.v1'
 
 const load = (key, fallback) => {
   try {
@@ -40,6 +41,7 @@ export default function App() {
     return init
   })
   const [pages, setPages] = useState(() => load(PAGES_KEY, {}))
+  const [images, setImages] = useState(() => load(IMAGES_KEY, {}))
   const [dvfTick, setDvfTick] = useState(0)
 
   useEffect(() => {
@@ -62,6 +64,16 @@ export default function App() {
     setPages((prev) => {
       const next = { ...prev, [name]: page }
       save(PAGES_KEY, next)
+      return next
+    })
+  }, [])
+
+  const selectImage = useCallback((name, photo) => {
+    setImages((prev) => {
+      const next = { ...prev }
+      if (photo) next[name] = photo
+      else delete next[name]
+      save(IMAGES_KEY, next)
       return next
     })
   }, [])
@@ -113,9 +125,9 @@ export default function App() {
     (c) => {
       const info = geo[c.name]
       const dvf = info?.code ? cachedDvf(info.code) : null
-      return buildSections(c, pageFor(c), dvf, neighborsOf(c))
+      return buildSections(c, pageFor(c), dvf, neighborsOf(c), images[c.name] || null)
     },
-    [geo, pageFor, neighborsOf],
+    [geo, pageFor, neighborsOf, images],
   )
 
   const nextCommune = ranked.find((c) => c.status === 'a_creer')
@@ -169,6 +181,8 @@ export default function App() {
               commune={current}
               all={ranked}
               sectionsFor={sectionsFor}
+              selectedPhoto={images[current.name] || null}
+              onPhoto={selectImage}
               hasOverride={!!pages[current.name]}
               neighbors={neighborsOf(current)}
               onSelect={setSelected}
