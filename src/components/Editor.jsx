@@ -8,8 +8,8 @@ import { jaccard, sectionsText, pageToHtml } from '../lib/page'
 
 const THRESHOLD = 0.4
 
-export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf, selectedPhoto, onPhoto, simulated, onSimulate, pageKey }) {
-  const code = c.info?.code
+export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf, selectedPhoto, onPhoto, simulated, canSimulate, onSimulate, pageKey }) {
+  const code = c.insee || c.info?.code
   const [dvf, setDvf] = useState(() => (code ? cachedDvf(code) : null))
   const [dvfState, setDvfState] = useState(dvf ? 'ok' : code ? 'loading' : 'nocode')
   const [instructions, setInstructions] = useState('')
@@ -231,10 +231,12 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
           </dl>
         </section>
 
+        {canSimulate && (
         <label className="flex cursor-pointer items-center gap-2 px-1 text-xs text-slate-500">
           <input type="checkbox" checked={simulated} onChange={(e) => onSimulate(e.target.checked)} className="h-3.5 w-3.5 accent-[#4a6a78]" />
           Simuler 0 annonce locale (bien vendu)
         </label>
+        )}
 
         <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-sm font-semibold">Illustration de la commune</h3>

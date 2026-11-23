@@ -11,7 +11,7 @@ export default function Banner({ next, geoState, onCreate }) {
   }
   const stats = [
     ['Population', next.population ? fmtNum(next.population) + ' hab.' : geoState === 'loading' ? 'Chargement…' : 'Indisponible'],
-    ['Budget annonce Cimco', fmtEur(next.annonce.budget)],
+    ['Budget annonce Cimco', next.annonce ? fmtEur(next.annonce.budget) : 'Aucune annonce'],
     ['Département', `${next.depName} (${next.dep})`],
     ['Score SEO', next.score + ' / 100'],
   ]

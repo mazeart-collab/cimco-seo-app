@@ -1,4 +1,5 @@
 import annonces from '../data/annonces.json'
+import cibles from '../data/communes-cibles.json'
 
 export const DEPARTEMENTS = {
   '01': 'Ain',
@@ -41,11 +42,16 @@ export function buildCommunes() {
     }
     map.get(a.commune).annonces.push(a)
   }
+  // Communes cibles sans annonce Cimco active (ignorées si une annonce existe déjà pour elles)
+  for (const t of cibles) {
+    if (map.has(t.commune)) continue
+    map.set(t.commune, { name: t.commune, cp: t.cp, dep: t.dep, depName: DEPARTEMENTS[t.dep] || t.dep, insee: t.insee, annonces: [] })
+  }
   return [...map.values()].map((c) => ({
     ...c,
     nbAnnonces: c.annonces.length,
-    annonce: c.annonces[0],
-    budgetMin: Math.min(...c.annonces.map((x) => x.budget)),
+    annonce: c.annonces[0] || null,
+    budgetMin: c.annonces.length ? Math.min(...c.annonces.map((x) => x.budget)) : null,
   }))
 }
 

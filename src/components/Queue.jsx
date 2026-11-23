@@ -101,7 +101,7 @@ export default function Queue({ rows, geoState, onOpen }) {
                 <td className="px-4 py-2.5 font-medium">{r.name}</td>
                 <td className="px-4 py-2.5 text-slate-500">{r.dep}</td>
                 <td className="px-4 py-2.5 text-right tabular-nums">{r.population ? fmtNum(r.population) : <span className="text-slate-300">n.d.</span>}</td>
-                <td className="px-4 py-2.5 text-right tabular-nums">{fmtEur(r.annonce.budget)}</td>
+                <td className="px-4 py-2.5 text-right tabular-nums">{r.annonce ? fmtEur(r.annonce.budget) : <span className="text-slate-300">Aucune annonce</span>}</td>
                 <td className="px-4 py-2.5">
                   <ScoreBadge row={r} />
                 </td>

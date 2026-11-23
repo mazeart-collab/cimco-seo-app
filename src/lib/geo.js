@@ -28,6 +28,14 @@ async function query(params) {
 
 // Retourne { code, population } ou null si la commune n'est pas trouvée. Lève une erreur si l'API est injoignable.
 async function lookup(c) {
+  // Code INSEE connu : requête directe
+  if (c.insee) {
+    const r = await fetch(`${API}/${c.insee}?${new URLSearchParams({ fields: 'nom,code,population', format: 'json' })}`)
+    if (r.status === 404) return null
+    if (!r.ok) throw new Error('geo ' + r.status)
+    const hit = await r.json()
+    return { code: hit.code, population: hit.population ?? null }
+  }
   const target = norm(c.name)
   let list = await query({ nom: c.name, codeDepartement: c.dep, limit: 5 })
   let hit = list.find((x) => norm(x.nom) === target)

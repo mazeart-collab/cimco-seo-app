@@ -111,7 +111,7 @@ export default function App() {
           status: status[c.name] || 'a_creer',
         }
       })
-      .sort((a, b) => b.score - a.score || b.nbAnnonces - a.nbAnnonces || (b.population || 0) - (a.population || 0) || b.budgetMin - a.budgetMin)
+      .sort((a, b) => b.score - a.score || b.nbAnnonces - a.nbAnnonces || (b.population || 0) - (a.population || 0) || (b.budgetMin || 0) - (a.budgetMin || 0))
   }, [communes, geo, status])
 
   // Annonces du même département, les plus proches par code postal en premier
@@ -119,10 +119,11 @@ export default function App() {
   const neighborsOf = useCallback(
     (c) => {
       const byProximity = (a, b) => Math.abs(a.cp - c.cp) - Math.abs(b.cp - c.cp) || a.name.localeCompare(b.name)
-      const sameDep = communes.filter((x) => x.dep === c.dep && x.name !== c.name).sort(byProximity)
+      const withListing = communes.filter((x) => x.annonce)
+      const sameDep = withListing.filter((x) => x.dep === c.dep && x.name !== c.name).sort(byProximity)
       if (c.nbAnnonces > 0 || sameDep.length >= 3) return sameDep.slice(0, 3)
       // Sans annonce locale et moins de 3 annonces dans le département : complété par les plus proches de la région
-      const others = communes.filter((x) => x.dep !== c.dep).sort(byProximity)
+      const others = withListing.filter((x) => x.dep !== c.dep).sort(byProximity)
       return [...sameDep, ...others].slice(0, 3)
     },
     [communes],
@@ -133,7 +134,8 @@ export default function App() {
     (raw) => {
       const c = eff(raw)
       const info = geo[c.name]
-      const dvf = info?.code ? cachedDvf(info.code) : null
+      const code = c.insee || info?.code
+      const dvf = code ? cachedDvf(code) : null
       return { ...buildTemplatePage(c, info, dvf, neighborsOf(c)), ...(pages[pageKey(c)] || {}) }
     },
     // dvfTick force le recalcul quand un nouveau résultat DVF est mis en cache
@@ -146,7 +148,8 @@ export default function App() {
     (raw) => {
       const c = eff(raw)
       const info = geo[c.name]
-      const dvf = info?.code ? cachedDvf(info.code) : null
+      const code = c.insee || info?.code
+      const dvf = code ? cachedDvf(code) : null
       return buildSections(c, pageFor(c), dvf, neighborsOf(c), images[c.name] || null)
     },
     [geo, pageFor, neighborsOf, images, eff],
@@ -199,6 +202,7 @@ export default function App() {
             <Editor
               key={current.name}
               commune={eff(current)}
+              canSimulate={!!current.annonce}
               simulated={!!sim0[current.name]}
               onSimulate={(on) => setSimulated(current.name, on)}
               pageKey={pageKey(eff(current))}
