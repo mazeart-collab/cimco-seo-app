@@ -5,7 +5,7 @@ const iconFor = (label) => (label === 'Population' ? Users : label === 'Budget p
 export default function Preview({ s }) {
   return (
     <article className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-      <div className="bg-slate-900 px-6 py-8 text-white">
+      <div className="bg-[#1a1a18] px-6 py-8 text-white">
         <h1 className="text-2xl font-bold sm:text-3xl">{s.h1}</h1>
         <p className="mt-3 text-sm leading-relaxed text-slate-300">{s.intro}</p>
       </div>

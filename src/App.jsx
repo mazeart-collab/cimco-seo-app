@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ListOrdered, PenSquare, MapPin } from 'lucide-react'
+import { ListOrdered, PenSquare } from 'lucide-react'
 import { buildCommunes, SEED_TREATED, seoBreakdown, seoLevel } from './lib/data'
 import { enrich, loadGeoCache } from './lib/geo'
 import { cachedDvf } from './lib/api'
@@ -139,12 +139,10 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-slate-200 bg-white">
+      <header className="border-b border-[#1a1a1812] bg-white">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600 text-white">
-              <MapPin size={18} />
-            </div>
+            <img src="/cimco-logo.webp" alt="Cimco" width="30" height="34" className="h-9 w-auto" />
             <div>
               <h1 className="text-base font-semibold leading-tight">Cimco SEO Local</h1>
               <p className="text-xs text-slate-500">Pages « Faire construire à [commune] »</p>

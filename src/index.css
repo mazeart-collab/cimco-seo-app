@@ -1,3 +1,28 @@
 @import "tailwindcss";
 
-body { @apply bg-slate-50 text-slate-900 antialiased; }
+/* Charte relevée sur cimco.fr : fond #fbfaf8, encre #1a1a18, accent #8fabb9 / #4a6a78, Manrope (titres) + Poppins (texte) */
+@theme {
+  --font-sans: "Poppins", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-display: "Manrope", system-ui, -apple-system, sans-serif;
+
+  /* La palette "indigo" de l'interface suit l'accent Cimco */
+  --color-indigo-50: #f1f6f8;
+  --color-indigo-100: #e3eef3;
+  --color-indigo-200: #cfe3ec;
+  --color-indigo-300: #a9c6d2;
+  --color-indigo-400: #8fabb9;
+  --color-indigo-500: #6f97a8;
+  --color-indigo-600: #4a6a78;
+  --color-indigo-700: #3d5762;
+  --color-indigo-800: #30454e;
+  --color-indigo-900: #1a1a18;
+}
+
+body {
+  background: #fbfaf8;
+  color: #1a1a18;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.01em; }

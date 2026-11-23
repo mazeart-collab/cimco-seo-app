@@ -181,16 +181,17 @@ export function jaccard(a, b) {
 const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
 const STYLE = `<style>
-/* Aperçu autonome : remplacez --cimco-primary et --cimco-dark par les couleurs de la charte Cimco */
-.cimco-local{--cimco-primary:#1d4ed8;--cimco-dark:#0f172a;--cimco-soft:#eff6ff;--cimco-line:#e2e8f0;max-width:960px;margin:0 auto;color:var(--cimco-dark);font:16px/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+/* Charte relevée sur cimco.fr (fond #fbfaf8, encre #1a1a18, accent #4a6a78) ; si le thème charge déjà Manrope et Poppins, elles s'appliquent d'elles-mêmes */
+.cimco-local{--cimco-primary:#4a6a78;--cimco-accent:#8fabb9;--cimco-dark:#1a1a18;--cimco-soft:#f4f3ef;--cimco-line:#1a1a1812;max-width:960px;margin:0 auto;color:var(--cimco-dark);font:16px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
 .cimco-local *{box-sizing:border-box}
+.cimco-local h1,.cimco-local h2,.cimco-local h3{font-family:"Manrope",system-ui,-apple-system,sans-serif;letter-spacing:-.01em}
 .cimco-local h1{font-size:2rem;line-height:1.2;margin:0 0 .75rem}
 .cimco-local h2{font-size:1.35rem;margin:2rem 0 .75rem}
 .cimco-local p{margin:0 0 1rem}
-.cimco-local .cl-hero{background:var(--cimco-dark);color:#fff;border-radius:12px;padding:2rem}
-.cimco-local .cl-hero p{margin:0;color:#cbd5e1}
+.cimco-local .cl-hero{background:var(--cimco-dark);color:#fff;border-radius:24px;padding:2rem}
+.cimco-local .cl-hero p{margin:0;color:#cfe3ec}
 .cimco-local .cl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
-.cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:12px;padding:1rem;background:#fff}
+.cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:16px;padding:1rem;background:#fff}
 .cimco-local a.cl-card{display:block;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s}
 .cimco-local a.cl-card:hover{border-color:var(--cimco-primary);box-shadow:0 4px 14px rgba(15,23,42,.1)}
 .cimco-local .cl-more{font-size:.75rem;color:#64748b;margin-top:.25rem}
@@ -199,13 +200,13 @@ const STYLE = `<style>
 .cimco-local .cl-value{font-size:1.25rem;font-weight:700}
 .cimco-local .cl-ref{font-size:.75rem;color:#94a3b8;margin-top:.5rem}
 .cimco-local .cl-figure{margin:1rem 0 0}
-.cimco-local .cl-figure img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;border-radius:12px}
+.cimco-local .cl-figure img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;border-radius:24px}
 .cimco-local .cl-figure figcaption{font-size:.8rem;color:#64748b;margin-top:.4rem}
 .cimco-local .cl-note{font-size:.8rem;color:#64748b}
 .cimco-local ul.cl-list{padding-left:1.2rem}
 .cimco-local details{border:1px solid var(--cimco-line);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem}
 .cimco-local summary{cursor:pointer;font-weight:600}
-.cimco-local .cl-cta{background:var(--cimco-soft);border-radius:12px;padding:1.5rem;margin-top:2rem}
+.cimco-local .cl-cta{background:var(--cimco-soft);border-radius:24px;padding:1.5rem;margin-top:2rem}
 .cimco-local .cl-cta h2{margin-top:0}
 .cimco-local .cl-form{display:grid;grid-template-columns:1fr;gap:.75rem}
 .cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:8px;padding:.6rem .75rem;font:inherit;background:#fff}

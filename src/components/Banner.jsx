@@ -4,7 +4,7 @@ import { fmtEur, fmtNum } from '../lib/data'
 export default function Banner({ next, geoState, onCreate }) {
   if (!next) {
     return (
-      <section className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
+      <section className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
         Toutes les communes sont traitées.
       </section>
     )
@@ -16,10 +16,10 @@ export default function Banner({ next, geoState, onCreate }) {
     ['Score SEO', next.score + ' / 100'],
   ]
   return (
-    <section className="overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 to-violet-600 p-5 text-white shadow-sm">
+    <section className="overflow-hidden rounded-3xl bg-[#1a1a18] p-5 text-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-indigo-100">
+          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-indigo-300">
             <Sparkles size={14} /> Recommandation
             {geoState === 'loading' && <Loader2 size={13} className="animate-spin" />}
           </p>
@@ -27,7 +27,7 @@ export default function Banner({ next, geoState, onCreate }) {
           <dl className="mt-3 flex flex-wrap gap-x-6 gap-y-2">
             {stats.map(([k, v]) => (
               <div key={k}>
-                <dt className="text-xs text-indigo-200">{k}</dt>
+                <dt className="text-xs text-indigo-300">{k}</dt>
                 <dd className="text-sm font-semibold">{v}</dd>
               </div>
             ))}
@@ -35,7 +35,7 @@ export default function Banner({ next, geoState, onCreate }) {
         </div>
         <button
           onClick={onCreate}
-          className="flex items-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+          className="flex items-center gap-2 rounded-lg bg-[#fbfaf8] px-4 py-2.5 text-sm font-semibold text-[#1a1a18] shadow-sm transition hover:bg-indigo-200"
         >
           Créer cette page maintenant <ArrowRight size={16} />
         </button>
