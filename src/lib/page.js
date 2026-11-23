@@ -1,5 +1,7 @@
 import { fmtEur, fmtNum } from './data'
 
+export const LISTINGS_URL = 'https://cimco.fr/annonces-maisons-terrains'
+
 // ---------- Texte par défaut (données réelles uniquement) ----------
 
 const dvfMain = (dvf) => (dvf?.terrain ? ['terrain', dvf.terrain] : dvf?.maison ? ['maison', dvf.maison] : dvf?.repere ? ['repere', dvf.repere] : null)
@@ -68,6 +70,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     name: x.name,
     here: i === 0,
     ref: x.annonce.ref,
+    url: x.annonce.url || LISTINGS_URL,
     title: `Projet maison ${x.annonce.maison_m2} m²${x.annonce.terrain_m2 ? ` + terrain ${fmtNum(x.annonce.terrain_m2)} m²` : ''} à ${x.name}`,
     budget: fmtEur(x.annonce.budget),
   }))
@@ -141,7 +144,7 @@ export function sectionsText(s) {
     s.h1, ...(s.image ? [s.image.alt, s.image.legend, s.image.credit] : []), s.intro, s.figuresTitle,
     ...s.figures.flatMap((f) => [f.label, f.value, f.note]),
     s.localTitle, s.local,
-    ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`]),
+    ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`, 'Voir sur cimco.fr →']),
     s.budgetTitle, s.budget,
     ...s.breakdown.flatMap((b) => [b.label, b.value]),
     s.whyTitle, s.why, ...s.whyPoints,
@@ -187,6 +190,9 @@ const STYLE = `<style>
 .cimco-local .cl-hero p{margin:0;color:#cbd5e1}
 .cimco-local .cl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
 .cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:12px;padding:1rem;background:#fff}
+.cimco-local a.cl-card{display:block;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s}
+.cimco-local a.cl-card:hover{border-color:var(--cimco-primary);box-shadow:0 4px 14px rgba(15,23,42,.1)}
+.cimco-local .cl-more{font-size:.75rem;color:#64748b;margin-top:.25rem}
 .cimco-local .cl-card.is-here{border-color:var(--cimco-primary);background:var(--cimco-soft)}
 .cimco-local .cl-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#64748b}
 .cimco-local .cl-value{font-size:1.25rem;font-weight:700}
@@ -208,8 +214,8 @@ export function pageToHtml(s, mode = 'raw') {
     : `<ul>\n${s.figures.map((f) => `    <li><strong>${esc(f.label)} :</strong> ${esc(f.value)} (${esc(f.note)})</li>`).join('\n')}\n  </ul>`
 
   const listings = standalone
-    ? `<div class="cl-grid">\n${s.listings.map((l) => `    <div class="cl-card${l.here ? ' is-here' : ''}"><div><strong>${esc(l.title)}</strong></div><div class="cl-value">${esc(l.budget)}</div><div class="cl-ref">Réf. ${esc(l.ref)}</div></div>`).join('\n')}\n  </div>`
-    : `<ul>\n${s.listings.map((l) => `    <li><strong>${esc(l.title)}</strong> : ${esc(l.budget)} (Réf. ${esc(l.ref)})</li>`).join('\n')}\n  </ul>`
+    ? `<div class="cl-grid">\n${s.listings.map((l) => `    <a class="cl-card${l.here ? ' is-here' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><div><strong>${esc(l.title)}</strong></div><div class="cl-value">${esc(l.budget)}</div><div class="cl-ref">Réf. ${esc(l.ref)}</div><div class="cl-more">Voir sur cimco.fr →</div></a>`).join('\n')}\n  </div>`
+    : `<ul>\n${s.listings.map((l) => `    <li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><strong>${esc(l.title)}</strong></a> : ${esc(l.budget)} (Réf. ${esc(l.ref)}) <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">Voir sur cimco.fr →</a></li>`).join('\n')}\n  </ul>`
 
   const faq = standalone
     ? s.faq.map((f) => `  <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('\n')

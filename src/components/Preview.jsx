@@ -47,11 +47,18 @@ export default function Preview({ s }) {
           <p className="mt-2 text-sm leading-relaxed text-slate-700">{s.local}</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             {s.listings.map((l) => (
-              <div key={l.ref} className={`rounded-lg border p-3 ${l.here ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200'}`}>
+              <a
+                key={l.ref}
+                href={l.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`block rounded-lg border p-3 transition hover:border-indigo-400 hover:shadow-md ${l.here ? 'border-indigo-300 bg-indigo-50' : 'border-slate-200'}`}
+              >
                 <p className="text-sm font-semibold">{l.title}</p>
                 <p className="mt-1 text-base font-bold">{l.budget}</p>
                 <p className="mt-2 text-xs text-slate-400">Réf. {l.ref}</p>
-              </div>
+                <p className="mt-1 text-xs text-slate-500">Voir sur cimco.fr →</p>
+              </a>
             ))}
           </div>
         </section>
