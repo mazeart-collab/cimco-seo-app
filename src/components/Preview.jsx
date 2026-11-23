@@ -1,6 +1,6 @@
 import { Home, Phone, Users, Landmark, Wallet, ChevronDown, CheckCircle2 } from 'lucide-react'
 
-const ICONS = [Users, Landmark, Home, Wallet]
+const iconFor = (label) => (label === 'Population' ? Users : label === 'Budget projet Cimco' ? Wallet : label.includes('maisons') ? Home : Landmark)
 
 export default function Preview({ s }) {
   return (
@@ -27,15 +27,14 @@ export default function Preview({ s }) {
         <section>
           <h2 className="text-lg font-semibold">{s.figuresTitle}</h2>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
-            {s.figures.map((f, i) => {
-              const Icon = ICONS[i] || Landmark
-              const missing = f.value === 'Non disponible'
+            {s.figures.map((f) => {
+              const Icon = iconFor(f.label)
               return (
                 <div key={f.label} className="rounded-lg border border-slate-200 p-3">
                   <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-slate-400">
                     <Icon size={13} /> {f.label}
                   </p>
-                  <p className={`mt-1 text-lg font-bold ${missing ? 'text-slate-400' : ''}`}>{f.value}</p>
+                  <p className="mt-1 text-lg font-bold">{f.value}</p>
                   <p className="text-xs text-slate-500">{f.note}</p>
                 </div>
               )

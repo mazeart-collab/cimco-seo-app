@@ -2,7 +2,12 @@
 const UA = 'CimcoSEOLocal/1.0'
 const TIMEOUT_MS = 8000
 const MAX = 6
-const EXCLUDED = ['blason', 'coat', 'map', 'carte', 'logo', 'flag', 'localisation', 'icon', 'drapeau', 'armoiries', 'panneau', 'locator']
+const EXCLUDED = [
+  'blason', 'coat', 'map', 'carte', 'logo', 'flag', 'localisation', 'icon', 'drapeau', 'armoiries', 'panneau', 'locator',
+  'sols', 'occupation', 'hydro', 'geologie', 'schema', 'diagram', 'commune-', 'population', 'demographie',
+]
+// "plan" en mot entier, pour ne pas exclure "plaine" ou "planches"
+const PLAN = /(^|[^a-z])plan([^a-z]|$)/
 const MIMES = ['image/jpeg', 'image/png', 'image/webp']
 
 const log = (level, event, extra = {}) => console[level](JSON.stringify({ fn: 'images', event, ...extra }))
@@ -49,6 +54,11 @@ async function imageInfo(titles) {
   return out
 }
 
+const isExcluded = (text) => {
+  const t = String(text || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/_/g, ' ')
+  return EXCLUDED.some((w) => t.includes(w)) || PLAN.test(t)
+}
+
 export function pickPhotos(pages, name, fromWikipedia) {
   const target = norm(name)
   const res = []
@@ -57,9 +67,9 @@ export function pickPhotos(pages, name, fromWikipedia) {
     if (!ii || !MIMES.includes(ii.mime)) continue
     if (!(ii.width >= 600) || !(ii.width > ii.height)) continue
     const title = String(p.title || '')
-    if (EXCLUDED.some((w) => norm(title).includes(w))) continue
     const meta = ii.extmetadata || {}
     const description = strip(meta.ImageDescription?.value)
+    if (isExcluded(title) || isExcluded(description)) continue
     // Pertinence : fichier de la page Wikipédia de la commune, ou nom de la commune dans le titre / la description
     const relevant = fromWikipedia.has(title) || norm(title).includes(target) || norm(description).includes(target)
     if (!relevant) continue

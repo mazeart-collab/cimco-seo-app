@@ -4,7 +4,7 @@ import { fmtEur, fmtNum } from './data'
 
 const dvfMain = (dvf) => (dvf?.terrain ? ['terrain', dvf.terrain] : dvf?.maison ? ['maison', dvf.maison] : dvf?.repere ? ['repere', dvf.repere] : null)
 
-const repereText = (r) => `${fmtEur(r.prix_m2_moyen)} le m² (source : ${r.source}, ${r.periode}${r.type_bien ? ', ' + r.type_bien : ', type de bien non précisé'})`
+const repereText = (r) => `${fmtEur(r.prix_m2_moyen)} le m² (source : ${r.source}, ${r.periode}${r.type_bien ? ', ' + r.type_bien : ''})`
 
 export function buildTemplatePage(c, info, dvf, neighbors) {
   const a = c.annonce
@@ -25,11 +25,11 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
     budget = `Terrain à bâtir : ${fmtEur(t.prix_m2_moyen)} le m² en moyenne, sur ${t.nb_transactions} vente${t.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${t.periode}).`
   } else if (main?.[0] === 'maison') {
     const m = main[1]
-    budget = `Pas assez de ventes de terrains à bâtir pour une moyenne. Maisons vendues : ${fmtEur(m.prix_m2_moyen)} le m² habitable en moyenne, terrain inclus, sur ${m.nb_transactions} vente${m.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${m.periode}).`
+    budget = `Prix moyen des maisons : ${fmtEur(m.prix_m2_moyen)} le m² habitable en moyenne, terrain inclus, sur ${m.nb_transactions} vente${m.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${m.periode}).`
   } else if (main?.[0] === 'repere') {
-    budget = `Prix moyen de référence : ${repereText(main[1])}. Il ne s'agit pas d'une moyenne de terrains à bâtir.`
+    budget = `Prix immobilier moyen : ${repereText(main[1])}.`
   } else {
-    budget = `Aucune moyenne DVF exploitable pour ${c.name} actuellement.`
+    budget = `Budget de l'annonce Cimco à ${c.name} : ${fmtEur(a.budget)}.`
   }
 
   return {
@@ -45,27 +45,24 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
 
 export function buildSections(c, page, dvf, neighbors, photo = null) {
   const a = c.annonce
-  const dvfLine = (agg, what) =>
-    agg
-      ? { value: `${fmtEur(agg.prix_m2_moyen)} / m²`, note: `${what}, ${agg.nb_transactions} vente${agg.nb_transactions > 1 ? 's' : ''}, ${agg.periode}` }
-      : { value: 'Non disponible', note: 'Pas assez de ventes exploitables' }
+  const dvfLine = (agg, what) => ({
+    value: `${fmtEur(agg.prix_m2_moyen)} / m²`,
+    note: `${what}, ${agg.nb_transactions} vente${agg.nb_transactions > 1 ? 's' : ''}, ${agg.periode}`,
+  })
 
-  const figures = [
-    c.population
-      ? { label: 'Population', value: `${fmtNum(c.population)} habitants`, note: 'Source : geo.api.gouv.fr' }
-      : { label: 'Population', value: 'Non disponible', note: 'geo.api.gouv.fr injoignable' },
-    { label: 'Prix moyen des terrains à bâtir', ...dvfLine(dvf?.terrain, 'Terrain à bâtir') },
-    { label: 'Prix moyen des maisons', ...dvfLine(dvf?.maison, 'Maisons, terrain inclus, par m² habitable') },
-    { label: 'Budget de l\'annonce Cimco', value: fmtEur(a.budget), note: `Référence ${a.ref}` },
-  ]
-  if (dvf?.repere) {
-    figures.splice(1, 0, {
-      label: 'Prix moyen de référence',
+  // Les cartes dont la donnée est absente sont masquées
+  const figures = []
+  if (c.population) figures.push({ label: 'Population', value: `${fmtNum(c.population)} habitants`, note: 'Source : geo.api.gouv.fr' })
+  if (dvf?.terrain) figures.push({ label: 'Prix moyen des terrains à bâtir', ...dvfLine(dvf.terrain, 'Terrain à bâtir') })
+  if (dvf?.maison) figures.push({ label: 'Prix moyen des maisons', ...dvfLine(dvf.maison, 'Maisons, terrain inclus, par m² habitable') })
+  if (!dvf?.terrain && !dvf?.maison && dvf?.repere) {
+    figures.push({
+      label: 'Prix immobilier moyen',
       value: `${fmtEur(dvf.repere.prix_m2_moyen)} / m²`,
-      note: `${dvf.repere.source}, ${dvf.repere.periode}, ${dvf.repere.type_bien || 'type de bien non précisé'}`,
+      note: `Source : ${dvf.repere.source}, ${dvf.repere.periode}`,
     })
   }
-  if (dvf && !dvf.repere) figures.push({ label: 'Source DVF', value: dvf.source, note: 'Moyennes par commune uniquement' })
+  figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Référence ${a.ref}` })
 
   const listings = [c, ...neighbors].map((x, i) => ({
     name: x.name,
@@ -81,17 +78,21 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
   }
   breakdown.push({ label: `Annonce Cimco ${a.ref} (maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''})`, value: fmtEur(a.budget) })
 
+  const annonceTxt = `l'annonce Cimco ${a.ref} propose une maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}`
   const faq = [
-    {
-      q: `Combien coûte un terrain à ${c.name} ?`,
-      a: dvf?.terrain
-        ? `Le prix moyen constaté est de ${fmtEur(dvf.terrain.prix_m2_moyen)} le m², sur ${dvf.terrain.nb_transactions} vente${dvf.terrain.nb_transactions > 1 ? 's' : ''} de terrains à bâtir (${dvf.terrain.periode}, source : ${dvf.source}).`
-        : dvf?.repere
-          ? `Il n'y a pas de moyenne de terrains à bâtir disponible. Prix moyen de référence : ${repereText(dvf.repere)}.`
-          : dvf?.maison
-          ? `Il n'y a pas assez de ventes de terrains à bâtir pour afficher une moyenne. Les maisons se vendent en moyenne ${fmtEur(dvf.maison.prix_m2_moyen)} le m² habitable, terrain inclus (${dvf.maison.nb_transactions} vente${dvf.maison.nb_transactions > 1 ? 's' : ''}, ${dvf.maison.periode}, source : ${dvf.source}).`
-          : `Aucune moyenne DVF exploitable n'est disponible pour ${c.name} actuellement.`,
-    },
+    dvf?.terrain
+      ? {
+          q: `Combien coûte un terrain à ${c.name} ?`,
+          a: `Le prix moyen constaté est de ${fmtEur(dvf.terrain.prix_m2_moyen)} le m², sur ${dvf.terrain.nb_transactions} vente${dvf.terrain.nb_transactions > 1 ? 's' : ''} de terrains à bâtir (${dvf.terrain.periode}, source : ${dvf.source}).`,
+        }
+      : {
+          q: `Quel budget prévoir pour construire à ${c.name} ?`,
+          a: dvf?.maison
+            ? `Les maisons se vendent en moyenne ${fmtEur(dvf.maison.prix_m2_moyen)} le m² habitable, terrain inclus (${dvf.maison.nb_transactions} vente${dvf.maison.nb_transactions > 1 ? 's' : ''}, ${dvf.maison.periode}, source : ${dvf.source}). À ${c.name}, ${annonceTxt}.`
+            : dvf?.repere
+              ? `Le prix immobilier moyen est de ${fmtEur(dvf.repere.prix_m2_moyen)} le m² (source : ${dvf.repere.source}, ${dvf.repere.periode}). À ${c.name}, ${annonceTxt}.`
+              : `À ${c.name}, ${annonceTxt}.`,
+        },
     {
       q: `Quelle annonce Cimco est disponible à ${c.name} ?`,
       a: `L'annonce ${a.ref} : maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''}, au budget de ${fmtEur(a.budget)}.`,
