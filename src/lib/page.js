@@ -2,7 +2,9 @@ import { fmtEur, fmtNum } from './data'
 
 // ---------- Texte par défaut (données réelles uniquement) ----------
 
-const dvfMain = (dvf) => (dvf?.terrain ? ['terrain', dvf.terrain] : dvf?.maison ? ['maison', dvf.maison] : null)
+const dvfMain = (dvf) => (dvf?.terrain ? ['terrain', dvf.terrain] : dvf?.maison ? ['maison', dvf.maison] : dvf?.repere ? ['repere', dvf.repere] : null)
+
+const repereText = (r) => `${fmtEur(r.prix_m2_moyen)} le m² (source : ${r.source}, ${r.periode}${r.type_bien ? ', ' + r.type_bien : ', type de bien non précisé'})`
 
 export function buildTemplatePage(c, info, dvf, neighbors) {
   const a = c.annonce
@@ -24,6 +26,8 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
   } else if (main?.[0] === 'maison') {
     const m = main[1]
     budget = `Pas assez de ventes de terrains à bâtir pour une moyenne. Maisons vendues : ${fmtEur(m.prix_m2_moyen)} le m² habitable en moyenne, terrain inclus, sur ${m.nb_transactions} vente${m.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${m.periode}).`
+  } else if (main?.[0] === 'repere') {
+    budget = `Prix moyen de référence : ${repereText(main[1])}. Il ne s'agit pas d'une moyenne de terrains à bâtir.`
   } else {
     budget = `Aucune moyenne DVF exploitable pour ${c.name} actuellement.`
   }
@@ -54,7 +58,14 @@ export function buildSections(c, page, dvf, neighbors) {
     { label: 'Prix moyen des maisons', ...dvfLine(dvf?.maison, 'Maisons, terrain inclus, par m² habitable') },
     { label: 'Budget de l\'annonce Cimco', value: fmtEur(a.budget), note: `Référence ${a.ref}` },
   ]
-  if (dvf) figures.push({ label: 'Source DVF', value: dvf.source, note: 'Moyennes par commune uniquement' })
+  if (dvf?.repere) {
+    figures.splice(1, 0, {
+      label: 'Prix moyen de référence',
+      value: `${fmtEur(dvf.repere.prix_m2_moyen)} / m²`,
+      note: `${dvf.repere.source}, ${dvf.repere.periode}, ${dvf.repere.type_bien || 'type de bien non précisé'}`,
+    })
+  }
+  if (dvf && !dvf.repere) figures.push({ label: 'Source DVF', value: dvf.source, note: 'Moyennes par commune uniquement' })
 
   const listings = [c, ...neighbors].map((x, i) => ({
     name: x.name,
@@ -75,7 +86,9 @@ export function buildSections(c, page, dvf, neighbors) {
       q: `Combien coûte un terrain à ${c.name} ?`,
       a: dvf?.terrain
         ? `Le prix moyen constaté est de ${fmtEur(dvf.terrain.prix_m2_moyen)} le m², sur ${dvf.terrain.nb_transactions} vente${dvf.terrain.nb_transactions > 1 ? 's' : ''} de terrains à bâtir (${dvf.terrain.periode}, source : ${dvf.source}).`
-        : dvf?.maison
+        : dvf?.repere
+          ? `Il n'y a pas de moyenne de terrains à bâtir disponible. Prix moyen de référence : ${repereText(dvf.repere)}.`
+          : dvf?.maison
           ? `Il n'y a pas assez de ventes de terrains à bâtir pour afficher une moyenne. Les maisons se vendent en moyenne ${fmtEur(dvf.maison.prix_m2_moyen)} le m² habitable, terrain inclus (${dvf.maison.nb_transactions} vente${dvf.maison.nb_transactions > 1 ? 's' : ''}, ${dvf.maison.periode}, source : ${dvf.source}).`
           : `Aucune moyenne DVF exploitable n'est disponible pour ${c.name} actuellement.`,
     },

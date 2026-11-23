@@ -1,9 +1,22 @@
 // Renvoie UNIQUEMENT des moyennes agrégées par commune (jamais le détail des ventes).
-// Source 1 : api.cquest.org (JSON ou GeoJSON). Source 2 (secours) : fichiers geo-dvf de data.gouv.fr.
+// Source : fichiers geo-dvf de data.gouv.fr (2025 et 2024, puis 2023 en cas de 404).
+// Secours : moyennes de référence enregistrées, uniquement si data.gouv.fr est injoignable ou vide.
 
-const SRC_CQUEST = 'DVF (DGFiP) via api.cquest.org'
 const SRC_GEODVF = 'DVF (DGFiP) via geo-dvf, data.gouv.fr'
-const GEODVF_YEARS = [2025, 2024, 2023, 2022, 2021]
+const SRC_SECOURS = 'Repère enregistré (secours, data.gouv.fr indisponible)'
+const TIMEOUT_MS = 5000
+
+// Repères de prix moyen au m² fournis pour les communes de démo (type de bien non précisé sauf mention)
+const SECOURS = {
+  '69027': { commune: 'Brignais', prix_m2_moyen: 3731, source: 'DVF', periode: '1er semestre 2026' },
+  '26362': { commune: 'Valence', prix_m2_moyen: 2635, source: 'Meilleurs Agents', periode: 'novembre 2026' },
+  '01053': { commune: 'Bourg-en-Bresse', prix_m2_moyen: 2267, source: 'DVF', periode: '2025' },
+  '26198': { commune: 'Montélimar', prix_m2_moyen: 2250, source: 'DVF', periode: '1er semestre 2026' },
+  '26281': { commune: 'Romans-sur-Isère', prix_m2_moyen: 1825, source: 'DVF', periode: '1er semestre 2026', type_bien: 'tous biens' },
+  '38563': { commune: 'Voiron', prix_m2_moyen: 3269, source: 'DVF / PAP', periode: 'novembre 2026' },
+  '01283': { commune: 'Oyonnax', prix_m2_moyen: 2125, source: 'DVF', periode: '2025' },
+  '73011': { commune: 'Albertville', prix_m2_moyen: 2925, source: 'DVF', periode: '1er semestre 2026' },
+}
 
 // Bornes d'exclusion des ventes à prix manifestement atypiques (€/m²)
 const BOUNDS = { terrain: [5, 3000], maison: [200, 15000] }
@@ -17,24 +30,7 @@ const num = (v) => {
 }
 const fr = (iso) => iso.split('-').reverse().join('/')
 
-// ---------- Sources ----------
-
-// L'API peut renvoyer { resultats: [...] } (JSON) ou { features: [{ properties }] } (GeoJSON)
-export function normalizeCquest(json) {
-  if (Array.isArray(json?.resultats)) return json.resultats
-  if (Array.isArray(json?.features)) return json.features.map((f) => f.properties || {})
-  if (Array.isArray(json)) return json
-  return []
-}
-
-async function fromCquest(code) {
-  const r = await fetch(`https://api.cquest.org/dvf?code_commune=${code}`, {
-    headers: { Accept: 'application/json, application/geo+json' },
-    signal: AbortSignal.timeout(20000),
-  })
-  if (!r.ok) throw new Error('cquest_http_' + r.status)
-  return normalizeCquest(await r.json())
-}
+// ---------- Source geo-dvf ----------
 
 function parseCsvLine(line) {
   const out = []
@@ -68,21 +64,31 @@ export function parseCsv(text) {
   })
 }
 
+// Un fichier CSV pour une année : { year, status, rows } ; status 0 = injoignable (timeout ou réseau)
+async function fetchYear(code, dep, year) {
+  const url = `https://files.data.gouv.fr/geo-dvf/latest/csv/${year}/communes/${dep}/${code}.csv`
+  try {
+    const r = await fetch(url, { signal: AbortSignal.timeout(TIMEOUT_MS) })
+    if (!r.ok) {
+      log('warn', 'geodvf_http', { code, year, status: r.status })
+      return { year, status: r.status, rows: [] }
+    }
+    const rows = parseCsv(await r.text())
+    log('info', 'geodvf_ok', { code, year, status: r.status, lignes: rows.length })
+    return { year, status: r.status, rows }
+  } catch (e) {
+    log('error', 'geodvf_failed', { code, year, message: String(e?.message || e) })
+    return { year, status: 0, rows: [] }
+  }
+}
+
 async function fromGeoDvf(code) {
   const dep = code.startsWith('97') ? code.slice(0, 3) : code.slice(0, 2)
-  const results = await Promise.all(
-    GEODVF_YEARS.map(async (y) => {
-      try {
-        const r = await fetch(`https://files.data.gouv.fr/geo-dvf/latest/csv/${y}/communes/${dep}/${code}.csv`, { signal: AbortSignal.timeout(15000) })
-        if (!r.ok) return []
-        return parseCsv(await r.text())
-      } catch (e) {
-        log('warn', 'geodvf_year_failed', { code, year: y, message: String(e?.message || e) })
-        return []
-      }
-    }),
-  )
-  return results.flat()
+  const settled = await Promise.allSettled([fetchYear(code, dep, 2025), fetchYear(code, dep, 2024)])
+  const results = settled.map((s) => (s.status === 'fulfilled' ? s.value : { status: 0, rows: [] }))
+  // 2023 seulement si l'un des deux fichiers récents est introuvable (404)
+  if (results.some((r) => r.status === 404)) results.push(await fetchYear(code, dep, 2023))
+  return { rows: results.flatMap((r) => r.rows), reachable: results.some((r) => r.status !== 0) }
 }
 
 // ---------- Agrégation ----------
@@ -152,31 +158,22 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'code_insee invalide' })
   }
 
-  let rows = []
-  let source = SRC_CQUEST
-  try {
-    rows = await fromCquest(code)
-    if (!rows.length) log('warn', 'cquest_empty', { code })
-  } catch (e) {
-    log('error', 'cquest_failed', { code, message: String(e?.message || e) })
-  }
+  const { rows, reachable } = await fromGeoDvf(code)
 
-  // Secours : fichiers geo-dvf si cquest ne répond pas ou ne renvoie rien
   if (!rows.length) {
-    try {
-      rows = await fromGeoDvf(code)
-      source = SRC_GEODVF
-      if (!rows.length) log('warn', 'geodvf_empty', { code })
-    } catch (e) {
-      log('error', 'geodvf_failed', { code, message: String(e?.message || e) })
+    // Secours : uniquement si data.gouv.fr est injoignable ou ne renvoie aucune ligne
+    const repere = SECOURS[code]
+    log('warn', 'geodvf_empty', { code, injoignable: !reachable, secours: !!repere })
+    if (repere) {
+      const { commune, ...r } = repere
+      return res.status(200).json({ code_insee: code, source: SRC_SECOURS, terrain: null, maison: null, repere: r })
     }
+    return res.status(503).json({ error: 'dvf_indisponible' })
   }
-
-  if (!rows.length) return res.status(503).json({ error: 'dvf_indisponible' })
 
   const agg = aggregate(rows)
-  log('info', 'aggregated', { code, source, rows: rows.length, mutations: agg.nb_mutations, terrain: agg.terrain?.nb_transactions ?? 0, maison: agg.maison?.nb_transactions ?? 0 })
+  log('info', 'aggregated', { code, rows: rows.length, mutations: agg.nb_mutations, terrain: agg.terrain?.nb_transactions ?? 0, maison: agg.maison?.nb_transactions ?? 0 })
 
   res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800')
-  return res.status(200).json({ code_insee: code, source, terrain: agg.terrain, maison: agg.maison })
+  return res.status(200).json({ code_insee: code, source: SRC_GEODVF, terrain: agg.terrain, maison: agg.maison })
 }

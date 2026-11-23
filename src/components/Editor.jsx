@@ -49,7 +49,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
 
   const payload = () => ({
     commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => n.name) },
-    dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison } : null,
+    dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison, repere: dvf.repere } : null,
     instructions,
     current: hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget } : null,
   })
@@ -150,8 +150,18 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
                         </div>
                       ),
                   )}
+                {dvfState === 'ok' && dvf?.repere && (
+                  <div className="mb-1">
+                    <dd className="font-medium">
+                      {fmtEur(dvf.repere.prix_m2_moyen)} / m² <span className="text-xs font-normal text-slate-500">(repère de secours, pas une moyenne de terrains)</span>
+                    </dd>
+                    <dd className="text-xs text-slate-400">
+                      {dvf.repere.source}, {dvf.repere.periode}, {dvf.repere.type_bien || 'type de bien non précisé'}
+                    </dd>
+                  </div>
+                )}
                 {dvfState === 'ok' && dvf && <dd className="text-xs text-slate-400">Source : {dvf.source}</dd>}
-                {dvfState === 'ok' && !dvf?.terrain && !dvf?.maison && <dd className="font-medium text-slate-500">Pas de moyenne exploitable</dd>}
+                {dvfState === 'ok' && !dvf?.terrain && !dvf?.maison && !dvf?.repere && <dd className="font-medium text-slate-500">Pas de moyenne exploitable</dd>}
                 {dvfState === 'error' && <dd className="font-medium text-amber-700">Données DVF momentanément indisponibles</dd>}
                 {dvfState === 'nocode' && <dd className="font-medium text-slate-500">Code INSEE non disponible</dd>}
               </div>
