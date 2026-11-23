@@ -111,7 +111,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
         src: photo.url,
         alt: `Vue de ${c.name} (${c.dep}) - faire construire avec Cimco`,
         legend: photo.legend,
-        credit: `Photo : ${photo.artist}, ${photo.license}, via Wikimedia Commons`,
+        credit: photo.manual ? '' : `Photo : ${photo.artist}, ${photo.license}, via Wikimedia Commons`,
         pageUrl: photo.pageUrl,
         width: photo.width,
         height: photo.height,
@@ -142,7 +142,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
 
 export function sectionsText(s) {
   return [
-    s.h1, ...(s.image ? [s.image.alt, s.image.legend, s.image.credit] : []), s.intro, s.figuresTitle,
+    s.h1, ...(s.image ? [s.image.alt, s.image.legend, s.image.credit].filter(Boolean) : []), s.intro, s.figuresTitle,
     ...s.figures.flatMap((f) => [f.label, f.value, f.note]),
     s.localTitle, s.local,
     ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`, 'Voir sur cimco.fr →']),
@@ -234,8 +234,8 @@ export function pageToHtml(s, mode = 'raw') {
   const figure = s.image
     ? `
   <figure${standalone ? ' class="cl-figure"' : ''}>
-    <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" width="${s.image.width}" height="${s.image.height}" loading="lazy">
-    <figcaption>${esc(s.image.legend)}. ${esc(s.image.credit)} (<a href="${esc(s.image.pageUrl)}" rel="noopener">source</a>)</figcaption>
+    <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" ${s.image.width ? `width="${s.image.width}" height="${s.image.height}" ` : ''}loading="lazy">
+    <figcaption>${esc(s.image.legend)}${s.image.credit ? `. ${esc(s.image.credit)} (<a href="${esc(s.image.pageUrl)}" rel="noopener">source</a>)` : ''}</figcaption>
   </figure>`
     : ''
 

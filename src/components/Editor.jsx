@@ -18,6 +18,21 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
 
   const sections = sectionsFor(c)
 
+  const [manualUrl, setManualUrl] = useState('')
+  const [manualError, setManualError] = useState(false)
+  const applyManual = () => {
+    let u
+    try {
+      u = new URL(manualUrl.trim())
+    } catch {
+      u = null
+    }
+    if (!u || !['http:', 'https:'].includes(u.protocol)) return setManualError(true)
+    setManualError(false)
+    onPhoto(c.name, { url: u.href, legend: `Vue de ${c.name}`, manual: true })
+    setManualUrl('')
+  }
+
   const [photos, setPhotos] = useState(() => cachedPhotos(c.name))
   const [photoState, setPhotoState] = useState(photos ? 'ok' : 'loading')
   useEffect(() => {
@@ -223,6 +238,25 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
               ))}
             </div>
           )}
+          <div className="mt-3">
+            <label htmlFor="img-url" className="text-xs font-medium text-slate-600">
+              Ou coller l'URL d'une image
+            </label>
+            <div className="mt-1 flex gap-2">
+              <input
+                id="img-url"
+                value={manualUrl}
+                onChange={(e) => setManualUrl(e.target.value)}
+                placeholder="https://…"
+                className="min-w-0 flex-1 rounded-lg border border-slate-200 px-3 py-1.5 text-sm outline-none focus:border-indigo-400"
+              />
+              <button onClick={applyManual} className="rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-slate-700">
+                Appliquer
+              </button>
+            </div>
+            {manualError && <p className="mt-1 text-xs text-rose-600">URL invalide : elle doit commencer par http:// ou https://.</p>}
+            <p className="mt-1 text-xs text-slate-400">Vérifiez vous-même les droits d'utilisation de l'image : aucun crédit n'est ajouté pour une image saisie à la main.</p>
+          </div>
           {selectedPhoto && (
             <button onClick={() => onPhoto(c.name, null)} className="mt-3 flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
               <ImageOff size={14} /> Aucune image

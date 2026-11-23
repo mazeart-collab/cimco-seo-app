@@ -21,37 +21,46 @@ async function api(host, params) {
   return r.json()
 }
 
-const toFile = (t) => t.replace(/^(Fichier|File):/i, 'File:')
+const IIPROPS = { prop: 'imageinfo', iiprop: 'url|size|mime|extmetadata', iiurlwidth: '1000' }
 
-// Fichiers présents sur la page Wikipédia de la commune
-async function wikipediaFiles(name, depName) {
-  const s = await api('fr.wikipedia.org', { action: 'query', list: 'search', srsearch: `${name} commune ${depName}`, srlimit: '5' })
-  const target = norm(name)
-  const hit = (s.query?.search || []).find((x) => norm(x.title).startsWith(target))
-  if (!hit) return []
-  const p = await api('fr.wikipedia.org', { action: 'query', titles: hit.title, prop: 'images', imlimit: '60' })
-  const page = Object.values(p.query?.pages || {})[0]
-  return (page?.images || []).map((i) => toFile(i.title))
-}
-
-async function commonsFiles(name, depName) {
-  const s = await api('commons.wikimedia.org', { action: 'query', list: 'search', srsearch: `${name} ${depName}`, srnamespace: '6', srlimit: '30' })
-  return (s.query?.search || []).map((x) => x.title)
-}
-
-async function imageInfo(titles) {
-  const out = []
-  for (let i = 0; i < titles.length; i += 40) {
-    const d = await api('commons.wikimedia.org', {
-      action: 'query',
-      titles: titles.slice(i, i + 40).join('|'),
-      prop: 'imageinfo',
-      iiprop: 'url|size|mime|extmetadata',
-      iiurlwidth: '1000',
+// 1. Image principale de l'article Wikipédia FR (essaie "Commune (Département)" si la page est une homonymie)
+async function mainImage(name, depName) {
+  for (const title of [name, `${name} (${depName})`]) {
+    const d = await api('fr.wikipedia.org', {
+      action: 'query', titles: title, prop: 'pageimages|pageprops', ppprop: 'disambiguation',
+      piprop: 'original|thumbnail|name', pithumbsize: '1200', redirects: '1',
     })
-    out.push(...Object.values(d.query?.pages || {}))
+    const page = Object.values(d.query?.pages || {})[0]
+    if (!page || page.missing !== undefined || page.pageprops?.disambiguation !== undefined) continue
+    if (page.pageimage) return `File:${page.pageimage}`
+    return null
   }
-  return out
+  return null
+}
+
+async function commonsInfoByTitle(title) {
+  const d = await api('commons.wikimedia.org', { action: 'query', titles: title, ...IIPROPS })
+  return Object.values(d.query?.pages || {})
+}
+
+// 2. Fichiers de la catégorie Commons de la commune ; renvoie { members, pages }
+async function categoryFiles(name, depName) {
+  for (const cat of [`Category:${name} (${depName})`, `Category:${name}`]) {
+    const d = await api('commons.wikimedia.org', {
+      action: 'query', generator: 'categorymembers', gcmtitle: cat, gcmtype: 'file', gcmlimit: '15', ...IIPROPS,
+    })
+    const pages = Object.values(d.query?.pages || {})
+    if (pages.length) return pages
+  }
+  return []
+}
+
+// 3. Uniquement si la catégorie est vide : recherche restreinte au titre du fichier
+async function searchFiles(name) {
+  const d = await api('commons.wikimedia.org', {
+    action: 'query', generator: 'search', gsrnamespace: '6', gsrsearch: `intitle:"${name}" filetype:bitmap`, gsrlimit: '15', ...IIPROPS,
+  })
+  return Object.values(d.query?.pages || {})
 }
 
 const isExcluded = (text) => {
@@ -59,20 +68,18 @@ const isExcluded = (text) => {
   return EXCLUDED.some((w) => t.includes(w)) || PLAN.test(t)
 }
 
-export function pickPhotos(pages, name, fromWikipedia) {
-  const target = norm(name)
+export function pickPhotos(pages) {
   const res = []
+  const seen = new Set()
   for (const p of pages) {
     const ii = p.imageinfo?.[0]
-    if (!ii || !MIMES.includes(ii.mime)) continue
+    if (!ii || !MIMES.includes(ii.mime) || seen.has(p.title)) continue
     if (!(ii.width >= 600) || !(ii.width > ii.height)) continue
     const title = String(p.title || '')
     const meta = ii.extmetadata || {}
     const description = strip(meta.ImageDescription?.value)
     if (isExcluded(title) || isExcluded(description)) continue
-    // Pertinence : fichier de la page Wikipédia de la commune, ou nom de la commune dans le titre / la description
-    const relevant = fromWikipedia.has(title) || norm(title).includes(target) || norm(description).includes(target)
-    if (!relevant) continue
+    seen.add(p.title)
     const cleanTitle = title.replace(/^File:/, '').replace(/\.[a-z]+$/i, '').replace(/_/g, ' ')
     res.push({
       url: ii.thumburl || ii.url,
@@ -84,12 +91,10 @@ export function pickPhotos(pages, name, fromWikipedia) {
       license: strip(meta.LicenseShortName?.value) || 'Licence non renseignée',
       licenseUrl: strip(meta.LicenseUrl?.value) || null,
       pageUrl: ii.descriptionurl,
-      wikipedia: fromWikipedia.has(title),
       area: ii.width * ii.height,
     })
   }
-  // Photos de la page Wikipédia d'abord, puis les plus grandes
-  return res.sort((a, b) => Number(b.wikipedia) - Number(a.wikipedia) || b.area - a.area).slice(0, MAX).map(({ wikipedia, area, ...r }) => r)
+  return res
 }
 
 export default async function handler(req, res) {
@@ -98,16 +103,28 @@ export default async function handler(req, res) {
   if (!name) return res.status(400).json({ error: 'commune manquante' })
 
   try {
-    const [w, c] = await Promise.allSettled([wikipediaFiles(name, depName), commonsFiles(name, depName)])
-    if (w.status === 'rejected') log('warn', 'wikipedia_failed', { name, message: String(w.reason?.message || w.reason) })
-    if (c.status === 'rejected') log('warn', 'commons_failed', { name, message: String(c.reason?.message || c.reason) })
-    if (w.status === 'rejected' && c.status === 'rejected') return res.status(503).json({ error: 'wikimedia_indisponible' })
+    const step = async (label, fn) => {
+      try {
+        return await fn()
+      } catch (e) {
+        log('warn', label + '_failed', { name, message: String(e?.message || e) })
+        return null
+      }
+    }
 
-    const wiki = w.status === 'fulfilled' ? w.value : []
-    const common = c.status === 'fulfilled' ? c.value : []
-    const titles = [...new Set([...wiki, ...common])].filter((t) => !/\.svg$/i.test(t))
-    const photos = titles.length ? pickPhotos(await imageInfo(titles), name, new Set(wiki)) : []
-    log('info', 'done', { name, candidats: titles.length, retenues: photos.length })
+    // Ordre strict : image principale Wikipédia, puis catégorie Commons, puis recherche (si catégorie vide)
+    const mainTitle = await step('wikipedia', () => mainImage(name, depName))
+    const mainPages = mainTitle ? (await step('main_info', () => commonsInfoByTitle(mainTitle))) || [] : []
+    const category = await step('category', () => categoryFiles(name, depName))
+    let rest = category || []
+    if (category && !category.length) rest = (await step('search', () => searchFiles(name))) || []
+
+    if (mainTitle === null && category === null) return res.status(503).json({ error: 'wikimedia_indisponible' })
+
+    const main = pickPhotos(mainPages)
+    const others = pickPhotos(rest).sort((a, b) => b.area - a.area)
+    const photos = [...main, ...others.filter((o) => !main.some((m) => m.title === o.title))].slice(0, MAX).map(({ area, ...r }) => r)
+    log('info', 'done', { name, principale: main.length, categorie: (category || []).length, retenues: photos.length })
 
     res.setHeader('Cache-Control', 's-maxage=86400, stale-while-revalidate=604800')
     return res.status(200).json({ commune: name, photos })
