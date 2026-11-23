@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff } from 'lucide-react'
+import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff, Download } from 'lucide-react'
 import Preview from './Preview'
 import { fmtEur, fmtNum } from '../lib/data'
 import { fetchDvf, generate, cachedDvf, fetchPhotos, cachedPhotos } from '../lib/api'
+import { optimizeImage, download, seoFileName, formatKo } from '../lib/optimize'
 import { jaccard, sectionsText, pageToHtml } from '../lib/page'
 
 const THRESHOLD = 0.4
@@ -18,6 +19,18 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
 
   const sections = sectionsFor(c)
 
+  const [opt, setOpt] = useState({ state: 'idle' })
+  const optimize = async () => {
+    setOpt({ state: 'busy' })
+    try {
+      const r = await optimizeImage(selectedPhoto.url)
+      download(r.blob, seoFileName(c.name, c.dep))
+      setOpt({ state: 'done', size: r.blob.size, original: r.originalSize, width: r.width })
+    } catch {
+      setOpt({ state: 'error' })
+    }
+  }
+  useEffect(() => setOpt({ state: 'idle' }), [selectedPhoto?.url])
   const [manualUrl, setManualUrl] = useState('')
   const [manualError, setManualError] = useState(false)
   const applyManual = () => {
@@ -257,6 +270,24 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
             {manualError && <p className="mt-1 text-xs text-rose-600">URL invalide : elle doit commencer par http:// ou https://.</p>}
             <p className="mt-1 text-xs text-slate-400">Vérifiez vous-même les droits d'utilisation de l'image : aucun crédit n'est ajouté pour une image saisie à la main.</p>
           </div>
+          {selectedPhoto && (
+            <div className="mt-3">
+              <button
+                onClick={optimize}
+                disabled={opt.state === 'busy'}
+                className="flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+              >
+                {opt.state === 'busy' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />}
+                Télécharger optimisée (WebP SEO)
+              </button>
+              {opt.state === 'done' && (
+                <p className="mt-1.5 text-xs text-emerald-700">
+                  Prêt : {formatKo(opt.size)} en WebP ({opt.width} px de large, original : {formatKo(opt.original)}). Fichier : {seoFileName(c.name, c.dep)}
+                </p>
+              )}
+              {opt.state === 'error' && <p className="mt-1.5 text-xs text-amber-700">Impossible d'optimiser cette image (source inaccessible ou format non pris en charge).</p>}
+            </div>
+          )}
           {selectedPhoto && (
             <button onClick={() => onPhoto(c.name, null)} className="mt-3 flex items-center gap-1.5 rounded-md border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">
               <ImageOff size={14} /> Aucune image
