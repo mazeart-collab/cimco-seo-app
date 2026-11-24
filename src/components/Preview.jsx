@@ -1,4 +1,6 @@
-import { Home, Users, Landmark, Wallet, ChevronDown, CheckCircle2, ArrowRight } from 'lucide-react'
+import { Home, Users, Landmark, Wallet, ChevronDown, CheckCircle2, ArrowRight, ShieldCheck, MapPin, FileCheck2, MessagesSquare } from 'lucide-react'
+
+const TRUST_ICON = { shield: ShieldCheck, pin: MapPin, doc: FileCheck2, chat: MessagesSquare }
 
 const iconFor = (label) => (label === 'Population' ? Users : label === 'Budget projet Cimco' ? Wallet : label.includes('maisons') ? Home : Landmark)
 
@@ -61,6 +63,25 @@ export default function Preview({ s }) {
           )}
         </div>
       </Band>
+
+      <section className="border-y border-[#1a1a18]/[.08] bg-white px-5 py-6 @min-[768px]:px-8">
+        <ul className="mx-auto grid max-w-5xl gap-x-6 gap-y-4 @min-[560px]:grid-cols-2 @min-[900px]:grid-cols-4">
+          {s.trust.map((t) => {
+            const Icon = TRUST_ICON[t.icon] || ShieldCheck
+            return (
+              <li key={t.title} className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#cfe3ec] text-[#4a6a78]">
+                  <Icon size={18} />
+                </span>
+                <span>
+                  <strong className="block font-display text-[15px] leading-snug">{t.title}</strong>
+                  <span className="text-[13px] leading-snug text-[#57534c]">{t.text}</span>
+                </span>
+              </li>
+            )
+          })}
+        </ul>
+      </section>
 
       {s.figures.length > 0 && (
         <Band className="bg-[#f4f3ef]">
@@ -127,6 +148,7 @@ export default function Preview({ s }) {
       <Band className="bg-[#4a6a78] text-white">
         <h2 className={`${H2} before:bg-[#cfe3ec]`}>{s.whyTitle}</h2>
         <p className="mt-3 max-w-[70ch] text-[15px] leading-[1.75] text-white/90">{s.why}</p>
+        <p className="mt-4 max-w-[70ch] rounded-r-xl border-l-[3px] border-[#cfe3ec] bg-white/10 px-4 py-3 text-[15px] leading-relaxed text-white/90">{s.whyTransparency}</p>
         <ul className="mt-6 grid gap-4 @min-[560px]:grid-cols-2 @min-[900px]:grid-cols-3">
           {s.whyPoints.map((p) => (
             <li key={p.title} className="rounded-[18px] border border-white/20 bg-white/10 px-5 py-4">
@@ -163,6 +185,7 @@ export default function Preview({ s }) {
           <input className="rounded-2xl border border-[#1a1a18]/10 bg-white px-4 py-3 text-sm @min-[560px]:col-span-2" placeholder="E-mail" />
           <button className={`justify-center @min-[560px]:col-span-2 ${BTN}`}>Demander à être rappelé</button>
         </form>
+        <p className="mt-3 text-xs text-[#57534c]">{s.reassurance}</p>
       </Band>
     </div>
   )

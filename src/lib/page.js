@@ -138,6 +138,15 @@ export const WHY_POINTS = [
   { title: 'Indépendant depuis 2009', text: 'Un courtier basé à Vourles, qui connaît les communes et les constructeurs de la région.' },
 ]
 
+// Réassurance : faits établis sur Cimco uniquement (aucune statistique)
+export const TRUST = [
+  { icon: 'shield', title: 'Indépendant depuis 2009', text: 'Courtier neutre, non lié à un seul constructeur' },
+  { icon: 'pin', title: 'Ancrage Auvergne-Rhône-Alpes', text: 'Basé à Vourles, connaissance du terrain local' },
+  { icon: 'doc', title: 'Contrat CCMI sécurisé', text: 'Prix ferme, délais et garantie de livraison vérifiés' },
+  { icon: 'chat', title: '1er échange sans engagement', text: 'Étude de faisabilité et de budget' },
+]
+export const REASSURANCE = 'Premier échange gratuit et sans engagement · Rappel par un conseiller Cimco · Données confidentielles'
+
 export function buildSections(c, page, dvf, neighbors, photo = null) {
   const a = c.annonce
   const dvfLine = (agg, what) => ({
@@ -209,7 +218,10 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     midCta: 'Parler de mon budget à un conseiller',
     whyTitle: 'Pourquoi passer par un courtier en construction comme Cimco ?',
     why: `Faire construire est souvent le projet d'une vie. Cimco se place à vos côtés, et non du côté d'un constructeur, pour sécuriser chaque décision, de ${c.name} à l'ensemble de l'Auvergne-Rhône-Alpes.`,
+    whyTransparency: "Comment ça fonctionne : Cimco défend les intérêts du futur propriétaire, et non ceux d'un constructeur. Nous mettons plusieurs partenaires locaux en concurrence sur un même cahier des charges, pour que vous compariez des offres réellement équivalentes.",
     whyPoints: WHY_POINTS,
+    trust: TRUST,
+    reassurance: REASSURANCE,
     faqTitle: `Questions fréquentes sur la construction à ${c.name}`,
     faq,
     ctaTitle: a ? `Être rappelé pour un projet à ${c.name}` : `Être alerté des prochains terrains à ${c.name}`,
@@ -229,7 +241,8 @@ export function sectionsText(s) {
     s.midCtaTitle, s.midCta,
     s.whyTitle, s.why, ...s.whyPoints.flatMap((p) => [p.title, p.text]),
     s.faqTitle, ...s.faq.flatMap((f) => [f.q, f.a]),
-    s.ctaTitle, s.ctaText,
+    ...s.trust.flatMap((t) => [t.title, t.text]), s.whyTransparency,
+    s.ctaTitle, s.ctaText, s.reassurance,
   ].join(' ')
 }
 
@@ -265,6 +278,15 @@ const CREDIT_CSS = `.cimco-local .cimco-photo{position:relative}
 .cimco-local .cimco-credit:hover,.cimco-local .cimco-credit:focus{background:rgba(26,26,24,.85)}
 .cimco-local .cimco-credit-tip{display:none;position:absolute;right:0;bottom:2rem;width:max-content;max-width:min(16rem,70vw);background:#1a1a18;color:#fff;border-radius:8px;padding:.4rem .6rem;font:400 .75rem/1.35 system-ui,sans-serif;text-align:left}
 .cimco-local .cimco-credit:hover .cimco-credit-tip,.cimco-local .cimco-credit:focus .cimco-credit-tip{display:block}`
+
+// Icônes sobres (traits, couleur héritée) du bandeau de réassurance
+const svg = (d) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${d}</svg>`
+const TRUST_ICONS = {
+  shield: svg('<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>'),
+  pin: svg('<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>'),
+  doc: svg('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 15 2 2 4-4"/>'),
+  chat: svg('<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'),
+}
 
 const STYLE = `<style>
 /* Charte relevée sur cimco.fr (fond #fbfaf8, encre #1a1a18, accent #8fabb9 / #4a6a78) ; si le thème charge déjà Manrope et Poppins, elles s'appliquent d'elles-mêmes */
@@ -322,6 +344,14 @@ ${CREDIT_CSS}
 .cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:14px;padding:.8rem 1rem;font:inherit;background:#fff}
 .cimco-local .cl-form input:focus{outline:2px solid var(--cimco-primary);outline-offset:1px}
 .cimco-local .cl-form .cl-full,.cimco-local .cl-form .cl-btn{grid-column:1/-1}
+.cimco-local .cl-band.cl-band--trust{padding-top:1.5rem;padding-bottom:1.5rem;background:#fff;border-top:1px solid var(--cimco-line);border-bottom:1px solid var(--cimco-line)}
+.cimco-local ul.cl-trust{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem 1.5rem}
+.cimco-local ul.cl-trust li{display:flex;align-items:flex-start;gap:.7rem}
+.cimco-local ul.cl-trust svg{flex:none;width:36px;height:36px;padding:8px;border-radius:12px;background:var(--cimco-tint);color:var(--cimco-primary)}
+.cimco-local ul.cl-trust strong{display:block;font-family:"Manrope",system-ui,sans-serif;font-size:.95rem;line-height:1.3}
+.cimco-local ul.cl-trust span{font-size:.82rem;line-height:1.45;color:var(--cimco-muted)}
+.cimco-local .cl-transparency{background:rgba(255,255,255,.1);border-left:3px solid var(--cimco-tint);border-radius:0 12px 12px 0;padding:.8rem 1rem;font-size:.95rem}
+.cimco-local .cl-reassurance{font-size:.78rem;color:var(--cimco-muted);margin:.75rem 0 0}
 @media(min-width:600px){.cimco-local .cl-form{grid-template-columns:1fr 1fr}}
 @media(min-width:768px){.cimco-local .cl-band{padding:4.5rem 2rem}.cimco-local .cl-hero.has-photo{grid-template-columns:1.05fr .95fr;gap:3rem}}
 </style>`
@@ -358,9 +388,13 @@ export function pageToHtml(s, mode = 'raw') {
       <input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone" autocomplete="tel">
       <input class="cl-full" type="email" name="email" placeholder="E-mail" aria-label="E-mail" autocomplete="email">
       <button class="cl-btn" type="submit">Demander à être rappelé</button>
-    </form>`
+    </form>
+    <p class="cl-reassurance">${esc(s.reassurance)}</p>
+    <!-- Emplacement recommandé : widget Avis Google / témoignages clients Cimco -->`
 
   const band = (mod, inner, id) => `  <section class="cl-band${mod ? ` cl-band--${mod}` : ''}"${id ? ` id="${id}"` : ''}><div class="cl-inner">\n${inner}\n  </div></section>`
+
+  const trustBar = `    <ul class="cl-trust">\n${s.trust.map((t) => `      <li>${TRUST_ICONS[t.icon] || ''}<span><strong>${esc(t.title)}</strong>${esc(t.text)}</span></li>`).join('\n')}\n    </ul>`
 
   const hero = `    <div class="cl-hero${s.image ? ' has-photo' : ''}">
       <div>
@@ -375,9 +409,10 @@ export function pageToHtml(s, mode = 'raw') {
   const metaComment = `<!--\n  Meta Title : ${String(s.metaTitle).replace(/--/g, '-')}\n  Meta Description : ${String(s.metaDescription).replace(/--/g, '-')}\n-->\n`
   const body = `<div class="cimco-local">
 ${band('', hero)}
+${band('trust', trustBar)}
 ${s.figures.length ? band('alt', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}${note(s.figuresNote)}`) + '\n' : ''}${band('', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}${note(s.listingsNote)}`)}
 ${band('alt', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n    ${breakdown}\n    <div class="cl-mid"><p>${esc(s.midCtaTitle)}</p>${cta(s.midCta, 'cl-link')}</div>`)}
-${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    ${whyList}`)}
+${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    <p class="cl-transparency">${esc(s.whyTransparency)}</p>\n    ${whyList}`)}
 ${band('', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
 ${band('soft', `    <h2>${esc(s.ctaTitle)}</h2>\n    <p>${esc(s.ctaText)}</p>\n    ${form}`, 'contact-cimco')}
 </div>`
