@@ -152,6 +152,7 @@ export function IntroScreen({ onStart, onSkip }) {
 
 // Tour guidé (étape 2) : chaque étape indique l'onglet où se trouve son élément
 const STEPS = [
+  { tab: null, el: '[data-tour="guide"]', title: 'Revoir ce guide', text: 'Ce bouton rouvre la présentation et relance la visite à tout moment, pratique pour une démonstration.' },
   { tab: 'communes', el: '[data-tour="tabs"]', title: 'Deux onglets', text: "« Recommandations / Communes » sert à choisir la commune à traiter. « Générateur » est l'espace de travail où la page est créée, vérifiée et exportée." },
   { tab: 'communes', el: '[data-tour="picker"]', title: '1. Choisir une commune', text: 'Recherchez une commune ou un code postal, ou partez des recommandations prioritaires. Un clic ouvre directement le générateur.' },
   { tab: 'communes', el: '[data-tour="queue"]', title: 'Le classement complet', text: 'Toutes les communes, classées par potentiel SEO (annonces Cimco actives et population). Les filtres séparent les pages à créer et celles déjà traitées.' },
@@ -163,7 +164,6 @@ const STEPS = [
   { tab: 'generator', el: '[data-tour="similarity"]', title: 'Contrôle anti-duplication', text: 'Le texte de la page est comparé aux pages déjà traitées. Au-delà de 40 % de similarité, une alerte invite à reformuler.' },
   { tab: 'generator', el: '[data-tour="view-tabs"]', title: 'Aperçu visuel ou code HTML', text: 'Basculez entre le rendu de la page (desktop, mobile, plein écran) et le code HTML complet.' },
   { tab: 'generator', el: '[data-tour="export"]', title: '4. Exporter vers HubSpot', text: 'Copiez le HTML/CSS prêt à publier et les métadonnées SEO, puis collez-les dans HubSpot.' },
-  { tab: null, el: '[data-tour="guide"]', title: 'Revoir ce guide', text: 'Ce bouton rouvre la présentation et relance la visite à tout moment, pratique pour une démonstration.' },
 ]
 
 export function startTour(setTab) {
