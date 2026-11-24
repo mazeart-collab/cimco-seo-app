@@ -123,7 +123,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
         type: 'info',
         text: `Mode de secours : ${
           r.reason === 'no_key'
-            ? 'aucune clé API (GEMINI_API_KEY ou ANTHROPIC_API_KEY) détectée sur le serveur. Si elle vient d\'être ajoutée sur Vercel, redéployez le projet.'
+            ? 'aucune clé ANTHROPIC_API_KEY détectée sur le serveur. Si elle vient d\'être ajoutée sur Vercel, redéployez le projet.'
             : r.reason === 'unavailable'
               ? "la fonction /api/generate est injoignable (normal en local, vérifiez le déploiement Vercel)."
               : `l'appel à l'IA a échoué (${r.reason}${r.detail ? ' : ' + String(r.detail).slice(0, 300) : ''}).`
