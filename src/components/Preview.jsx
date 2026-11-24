@@ -65,6 +65,7 @@ export default function Preview({ s }) {
       </Band>
 
       <section className="border-y border-[#1a1a18]/[.08] bg-white px-5 py-6 @min-[768px]:px-8">
+        <p className="mx-auto mb-4 max-w-5xl font-display text-xs font-bold uppercase tracking-[.08em] text-[#4a6a78]">{s.trustTitle}</p>
         <ul className="mx-auto grid max-w-5xl gap-x-6 gap-y-4 @min-[560px]:grid-cols-2 @min-[900px]:grid-cols-4">
           {s.trust.map((t) => {
             const Icon = TRUST_ICON[t.icon] || ShieldCheck

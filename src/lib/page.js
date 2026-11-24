@@ -220,6 +220,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     why: `Faire construire est souvent le projet d'une vie. Cimco se place à vos côtés, et non du côté d'un constructeur, pour sécuriser chaque décision, de ${c.name} à l'ensemble de l'Auvergne-Rhône-Alpes.`,
     whyTransparency: "Comment ça fonctionne : Cimco défend les intérêts du futur propriétaire, et non ceux d'un constructeur. Nous mettons plusieurs partenaires locaux en concurrence sur un même cahier des charges, pour que vous compariez des offres réellement équivalentes.",
     whyPoints: WHY_POINTS,
+    trustTitle: 'Pourquoi faire confiance à Cimco',
     trust: TRUST,
     reassurance: REASSURANCE,
     faqTitle: `Questions fréquentes sur la construction à ${c.name}`,
@@ -241,7 +242,7 @@ export function sectionsText(s) {
     s.midCtaTitle, s.midCta,
     s.whyTitle, s.why, ...s.whyPoints.flatMap((p) => [p.title, p.text]),
     s.faqTitle, ...s.faq.flatMap((f) => [f.q, f.a]),
-    ...s.trust.flatMap((t) => [t.title, t.text]), s.whyTransparency,
+    s.trustTitle, ...s.trust.flatMap((t) => [t.title, t.text]), s.whyTransparency,
     s.ctaTitle, s.ctaText, s.reassurance,
   ].join(' ')
 }
@@ -348,6 +349,7 @@ ${CREDIT_CSS}
 .cimco-local .cl-form input:focus{outline:2px solid var(--cimco-primary);outline-offset:1px}
 .cimco-local .cl-form .cl-full,.cimco-local .cl-form .cl-btn{grid-column:1/-1}
 .cimco-local .cl-band.cl-band--trust{padding-top:1.5rem;padding-bottom:1.5rem;background:#fff;border-top:1px solid var(--cimco-line);border-bottom:1px solid var(--cimco-line)}
+.cimco-local .cl-trust-title{font-family:"Manrope",system-ui,sans-serif;font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--cimco-primary);margin:0 0 1rem;max-width:none}
 .cimco-local ul.cl-trust{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1rem 1.5rem}
 .cimco-local ul.cl-trust li{display:flex;align-items:flex-start;gap:.7rem}
 .cimco-local ul.cl-trust svg{flex:none;width:36px;height:36px;padding:8px;border-radius:12px;background:var(--cimco-tint);color:var(--cimco-primary)}
@@ -397,7 +399,7 @@ export function pageToHtml(s, mode = 'raw') {
 
   const band = (mod, inner, id) => `  <section class="cl-band${mod ? ` cl-band--${mod}` : ''}"${id ? ` id="${id}"` : ''}><div class="cl-inner">\n${inner}\n  </div></section>`
 
-  const trustBar = `    <ul class="cl-trust">\n${s.trust.map((t) => `      <li>${TRUST_ICONS[t.icon] || ''}<span><strong>${esc(t.title)}</strong>${esc(t.text)}</span></li>`).join('\n')}\n    </ul>`
+  const trustBar = `    <p class="cl-trust-title">${esc(s.trustTitle)}</p>\n    <ul class="cl-trust">\n${s.trust.map((t) => `      <li>${TRUST_ICONS[t.icon] || ''}<span><strong>${esc(t.title)}</strong>${esc(t.text)}</span></li>`).join('\n')}\n    </ul>`
 
   const hero = `    <div class="cl-hero${s.image ? ' has-photo' : ''}">
       <div>
