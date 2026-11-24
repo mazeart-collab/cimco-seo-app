@@ -34,6 +34,14 @@ const BLOCKS = [
     ],
   },
   {
+    icon: Rocket,
+    title: 'À quoi ça sert',
+    paras: [
+      [null, 'Passer de plusieurs heures de rédaction manuelle à quelques secondes pour produire une page locale complète, en HTML et CSS prêts à intégrer dans HubSpot.'],
+      [null, "Chaque page combine des données de marché vérifiées, les annonces Cimco du secteur, un ancrage territorial, une FAQ utile et un formulaire de rappel. Un contrôle automatique vérifie l'unicité du texte contre le contenu dupliqué, permettant de déployer des dizaines de communes en une après-midi pour réduire progressivement la dépendance aux portails payants."],
+    ],
+  },
+  {
     icon: Wrench,
     title: 'Comment c’est fait',
     paras: [[null, "Prototype conçu rapidement en mobilisant l'IA sur toute la chaîne (conception et arbitrage avec Gemini, développement assisté avec Claude Code) et en combinant plusieurs briques techniques :"]],
@@ -41,14 +49,6 @@ const BLOCKS = [
       ['Interface & hébergement :', 'React, Vite, Tailwind CSS, déployé sur Vercel avec des fonctions serveur sécurisant les clés API.'],
       ['Rédaction IA :', 'API Anthropic Claude branchée à la demande, avec un coût marginal très faible (~0,01 € par page) et des garde-fous anti-hallucination sur les chiffres.'],
       ['Données réelles (APIs) :', 'Prix immobiliers issus des données DVF (data.gouv.fr), informations communales via geo.api.gouv.fr, et visuels libres de droits via Wikimedia Commons (crédits inclus).'],
-    ],
-  },
-  {
-    icon: Rocket,
-    title: 'À quoi ça sert',
-    paras: [
-      [null, 'Passer de plusieurs heures de rédaction manuelle à quelques secondes pour produire une page locale complète, en HTML et CSS prêts à intégrer dans HubSpot.'],
-      [null, "Chaque page combine des données de marché vérifiées, les annonces Cimco du secteur, un ancrage territorial, une FAQ utile et un formulaire de rappel. Un contrôle automatique vérifie l'unicité du texte contre le contenu dupliqué, permettant de déployer des dizaines de communes en une après-midi pour réduire progressivement la dépendance aux portails payants."],
     ],
   },
   {
@@ -97,7 +97,7 @@ export function IntroScreen({ onStart, onSkip }) {
         </h1>
         <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-600">Un prototype fonctionnel pour industrialiser le SEO local de Cimco — sa genèse, son architecture, ses usages et ses limites actuelles.</p>
 
-        <div className="mt-8 grid w-full gap-5 text-left md:grid-cols-2">
+        <div className="mt-8 flex w-full max-w-3xl flex-col gap-6 text-left">
           {BLOCKS.map(({ icon: Icon, title, paras, list }, i) => (
             <section key={title} className="flex flex-col rounded-[20px] border border-[#1a1a18]/[.08] bg-white p-6 sm:p-7 shadow-[0_1px_2px_rgba(26,26,24,.04),0_8px_24px_rgba(26,26,24,.06)]">
               <div className="flex items-center gap-3">
@@ -131,7 +131,7 @@ export function IntroScreen({ onStart, onSkip }) {
         <button
           ref={startRef}
           onClick={onStart}
-          className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#4a6a78] px-8 py-4 text-base font-bold text-white shadow-[0_8px_24px_rgba(74,106,120,.35)] transition hover:-translate-y-px hover:brightness-95"
+          className="mt-10 inline-flex items-center gap-2 rounded-full bg-[#4a6a78] px-8 py-4 outline-none focus-visible:ring-4 focus-visible:ring-[#8fabb9]/60 text-base font-bold text-white shadow-[0_8px_24px_rgba(74,106,120,.35)] transition hover:-translate-y-px hover:brightness-95"
         >
           Commencer l'onboarding <ArrowRight size={18} />
         </button>
