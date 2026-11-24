@@ -153,7 +153,8 @@ export function IntroScreen({ onStart, onSkip }) {
 // Tour guidé (étape 2) : chaque étape indique l'onglet où se trouve son élément
 const STEPS = [
   { tab: 'communes', el: '[data-tour="picker"]', title: '1. Choisir une commune', text: "Dans l'onglet Recommandations / Communes, recherchez une commune ou partez des recommandations classées par potentiel SEO. Un clic ouvre le générateur." },
-  { tab: 'generator', el: '[data-tour="generation"]', title: '2. Générer la page', text: "Un clic sur « Générer la page SEO » suffit. Les options de personnalisation permettent de donner des consignes à l'IA ou de changer la photo." },
+  { tab: 'generator', el: '[data-tour="generation"]', title: '2. Générer la page', text: "Un clic sur « Générer la page SEO » suffit. Les options de personnalisation permettent d'ajouter des consignes à l'IA." },
+  { tab: 'generator', el: '[data-tour="photo"]', title: 'Choisir la photo', text: 'Vignette de la photo actuelle, photos libres de la commune à choisir en un clic, ou votre propre image par URL.' },
   { tab: 'generator', el: '[data-tour="meta"]', title: "3. Vérifier le SEO et l'aperçu", text: "Meta Title et Meta Description avec leurs compteurs et le contrôle anti-duplication. Juste en dessous, le rendu visuel de la page ou son code HTML." },
   { tab: 'generator', el: '[data-tour="export"]', title: '4. Exporter vers HubSpot', text: 'Copiez le HTML/CSS prêt à publier et les métadonnées SEO, puis collez-les dans HubSpot.' },
 ]

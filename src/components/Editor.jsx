@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Zap, ArrowLeftRight, Wand2, Copy, Check, Loader2, Database, Home, AlertTriangle, Info, ImageOff, Download, MapPin, Landmark, CheckCircle2, ChevronDown, SlidersHorizontal, ShieldCheck, Eye, Code2, Tags } from 'lucide-react'
+import { Image as ImageIcon, Zap, ArrowLeftRight, Wand2, Copy, Check, Loader2, Database, Home, AlertTriangle, Info, ImageOff, Download, MapPin, Landmark, CheckCircle2, ChevronDown, SlidersHorizontal, ShieldCheck, Eye, Code2, Tags } from 'lucide-react'
 import { BTN_PRIMARY, BTN_SECONDARY } from './Steps'
 import PreviewPane from './PreviewPane'
 import SeoMeta from './SeoMeta'
@@ -287,9 +287,26 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
                   Simuler 0 annonce locale (bien vendu)
                 </label>
               )}
-              <div>
-              <h3 className="text-sm font-semibold">Photo de la commune</h3>
-              <p className="text-xs text-slate-500">Photos libres de Wikipédia et Wikimedia Commons. Cliquez sur une image pour l'inclure dans la page.</p>
+            </div>
+          </details>
+        </section>
+
+        <section data-tour="photo" className={CARD}>
+          <h3 className="text-sm font-semibold">Photo de la page</h3>
+          <div className="mt-3 flex items-center gap-3">
+            {selectedPhoto ? (
+              <img src={selectedPhoto.url} alt={selectedPhoto.legend || `Vue de ${c.name}`} className="h-16 w-24 shrink-0 rounded-lg object-cover ring-1 ring-slate-200" />
+            ) : (
+              <span className="flex h-16 w-24 shrink-0 items-center justify-center rounded-lg border border-dashed border-slate-300 bg-slate-50 text-slate-400">
+                <ImageIcon size={20} />
+              </span>
+            )}
+            <div className="min-w-0 text-xs">
+              <p className="font-medium text-slate-700">{selectedPhoto ? 'Photo actuelle' : 'Aucune photo pour le moment'}</p>
+              <p className="text-slate-500">{selectedPhoto ? creditOf(selectedPhoto) || 'Sans crédit affiché' : 'Choisissez une photo libre ci-dessous ou ajoutez la vôtre par URL.'}</p>
+            </div>
+          </div>
+          <p className="mt-4 text-xs text-slate-500">Photos libres de Wikipédia et Wikimedia Commons : cliquez pour choisir.</p>
               {photoState === 'loading' && (
                 <p className="mt-3 flex items-center gap-2 text-xs text-slate-500">
                   <Loader2 size={14} className="animate-spin" /> Recherche de photos
@@ -365,9 +382,6 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
                   <ImageOff size={14} /> Aucune image
                 </button>
               )}
-              </div>
-            </div>
-          </details>
         </section>
 
         <section data-tour="export" className={CARD}>
