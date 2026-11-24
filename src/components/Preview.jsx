@@ -123,7 +123,16 @@ export default function Preview({ s }) {
             </a>
           ))}
         </div>
-        <p className={NOTE}>{s.listingsNote}</p>
+        <div className="mt-7 text-center">
+          <a
+            href={s.listingsCta.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 rounded-full border-[1.5px] border-[#4a6a78] bg-white px-6 py-3 text-sm font-bold text-[#4a6a78] transition hover:bg-[#4a6a78] hover:text-white"
+          >
+            {s.listingsCta.label} <ArrowRight size={16} />
+          </a>
+        </div>
       </Band>
 
       <Band className="bg-[#f4f3ef]">

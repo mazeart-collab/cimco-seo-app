@@ -209,7 +209,7 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     figuresNote,
     localTitle: neighbors.length ? `Construire à ${c.name} et ${listingsZone(c, neighbors)}` : `Construire à ${c.name}`,
     local: page.local,
-    listingsNote: 'Annonces publiées sur cimco.fr, sous réserve de disponibilité.',
+    listingsCta: { label: 'Voir toutes les annonces', url: LISTINGS_URL },
     listings,
     budgetTitle: `Votre budget pour faire construire à ${c.name}`,
     budget: page.budget,
@@ -235,7 +235,7 @@ export function sectionsText(s) {
     s.h1, ...(s.image ? [s.image.alt, s.image.credit].filter(Boolean) : []), ...s.badges, s.heroCta, s.intro, s.figuresTitle,
     ...s.figures.flatMap((f) => [f.label, f.value, f.note]), s.figuresNote,
     s.localTitle, s.local,
-    ...s.listings.flatMap((l) => [l.title, l.place, l.budget, 'Voir le projet']), s.listingsNote,
+    ...s.listings.flatMap((l) => [l.title, l.place, l.budget, 'Voir le projet']), s.listingsCta.label,
     s.budgetTitle, s.budget,
     ...s.breakdown.flatMap((b) => [b.label, b.value]),
     s.midCtaTitle, s.midCta,
@@ -311,6 +311,9 @@ const STYLE = `<style>
 .cimco-local .cl-badges li{font-size:.78rem;font-weight:600;letter-spacing:.02em;color:var(--cimco-primary);background:#fff;border:1px solid var(--cimco-line);border-radius:999px;padding:.3rem .8rem}
 .cimco-local .cl-btn{display:inline-block;border:0;border-radius:999px;padding:.9rem 1.6rem;font:inherit;font-weight:700;line-height:1.2;color:#fff;background:var(--cimco-primary);text-decoration:none;cursor:pointer;box-shadow:0 6px 18px rgba(74,106,120,.28);transition:filter .15s,transform .15s}
 .cimco-local .cl-btn:hover{filter:brightness(.93);transform:translateY(-1px)}
+.cimco-local .cl-more-listings{margin:1.75rem 0 0;text-align:center;max-width:none}
+.cimco-local .cl-btn.cl-btn--ghost{background:#fff;color:var(--cimco-primary);border:1.5px solid var(--cimco-primary);box-shadow:none}
+.cimco-local .cl-btn.cl-btn--ghost:hover{background:var(--cimco-primary);color:#fff;filter:none}
 .cimco-local .cl-link{font-weight:700;color:var(--cimco-primary);text-decoration:none;border-bottom:2px solid var(--cimco-accent)}
 .cimco-local .cl-link:hover{border-color:var(--cimco-primary)}
 .cimco-local .cl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1.5rem}
@@ -410,7 +413,7 @@ export function pageToHtml(s, mode = 'raw') {
   const body = `<div class="cimco-local">
 ${band('', hero)}
 ${band('trust', trustBar)}
-${s.figures.length ? band('alt', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}${note(s.figuresNote)}`) + '\n' : ''}${band('', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}${note(s.listingsNote)}`)}
+${s.figures.length ? band('alt', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}${note(s.figuresNote)}`) + '\n' : ''}${band('', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}\n    <p class="cl-more-listings"><a class="cl-btn cl-btn--ghost" href="${esc(s.listingsCta.url)}" target="_blank" rel="noopener noreferrer">${esc(s.listingsCta.label)} →</a></p>`)}
 ${band('alt', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n    ${breakdown}\n    <div class="cl-mid"><p>${esc(s.midCtaTitle)}</p>${cta(s.midCta, 'cl-link')}</div>`)}
 ${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    <p class="cl-transparency">${esc(s.whyTransparency)}</p>\n    ${whyList}`)}
 ${band('', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
