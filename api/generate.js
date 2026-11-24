@@ -6,7 +6,7 @@
 // - entrée bornée champ par champ et au total (MAX_PROMPT_CHARS) ;
 // - limite d'appels par IP et par jour, plus un plafond global par jour ;
 // - plafond de dépense mensuel à régler dans la console Anthropic.
-const MODEL = 'claude-opus-5-5'
+const MODEL = 'claude-sonnet-5-5'
 const MAX_OUTPUT_TOKENS = 4000
 const PER_IP_DAILY = 20
 const GLOBAL_DAILY = 200
