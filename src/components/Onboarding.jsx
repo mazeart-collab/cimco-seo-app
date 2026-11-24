@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { flushSync } from 'react-dom'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { Lightbulb, Wrench, Rocket, Compass, ArrowRight, X } from 'lucide-react'
@@ -149,18 +150,16 @@ export function IntroScreen({ onStart, onSkip }) {
   )
 }
 
-// Tour guidé (étape 2) : suit les 4 étapes de l'interface, dans l'ordre
+// Tour guidé (étape 2) : chaque étape indique l'onglet où se trouve son élément
 const STEPS = [
-  { el: '[data-tour="stepper"]', title: 'Un parcours en 4 étapes', text: "La barre de progression indique où vous en êtes : choisir, générer, vérifier, exporter. Un clic sur une étape y mène directement." },
-  { el: '[data-tour="step-1"]', title: '1. Choisir une commune', text: "Recherchez une commune ou partez des recommandations, classées par potentiel SEO. Le résumé confirme que ses données réelles sont prêtes." },
-  { el: '[data-tour="generate"]', title: '2. Générer la page', text: 'Un clic suffit : Claude rédige une page unique à partir des données de la commune, et elle est enregistrée.' },
-  { el: '[data-tour="options"]', title: 'Options de personnalisation', text: "Facultatif : donnez vos consignes à l'IA pour ajuster le ton ou une section, ou changez la photo de la page." },
-  { el: '[data-tour="step-3"]', title: '3. Vérifier le SEO et le rendu', text: "Après génération : aperçu Google avec contrôle d'unicité des métadonnées et du texte, puis rendu de la page ou son code HTML." },
-  { el: '[data-tour="step-4"]', title: '4. Exporter vers HubSpot', text: 'Copiez le HTML/CSS de la page et ses métadonnées SEO, prêts à coller dans HubSpot.' },
-  { el: '[data-tour="guide"]', title: 'Revoir ce guide', text: 'Ce bouton relance la présentation et la visite à tout moment, pratique pour une démonstration.' },
+  { tab: 'communes', el: '[data-tour="picker"]', title: '1. Choisir une commune', text: "Dans l'onglet Recommandations / Communes, recherchez une commune ou partez des recommandations classées par potentiel SEO. Un clic ouvre le générateur." },
+  { tab: 'generator', el: '[data-tour="generation"]', title: '2. Générer la page', text: "Un clic sur « Générer la page SEO » suffit. Les options de personnalisation permettent de donner des consignes à l'IA ou de changer la photo." },
+  { tab: 'generator', el: '[data-tour="meta"]', title: "3. Vérifier le SEO et l'aperçu", text: "Meta Title et Meta Description avec leurs compteurs et le contrôle anti-duplication. Juste en dessous, le rendu visuel de la page ou son code HTML." },
+  { tab: 'generator', el: '[data-tour="export"]', title: '4. Exporter vers HubSpot', text: 'Copiez le HTML/CSS prêt à publier et les métadonnées SEO, puis collez-les dans HubSpot.' },
 ]
 
-export function startTour() {
+export function startTour(setTab) {
+  const goTab = (tab) => tab && flushSync(() => setTab(tab))
   const tour = driver({
     showProgress: true,
     progressText: '{{current}} / {{total}}',
@@ -175,7 +174,11 @@ export function startTour() {
     smoothScroll: true,
     popoverClass: 'cimco-tour',
     steps: STEPS.map((s) => ({
-      element: () => document.querySelector(s.el),
+      // L'onglet est affiché (rendu synchrone) avant que driver.js ne mesure l'élément
+      element: () => {
+        goTab(s.tab)
+        return document.querySelector(s.el)
+      },
       popover: { title: s.title, description: s.text },
     })),
     onPopoverRender: (popover) => {
@@ -187,7 +190,10 @@ export function startTour() {
       popover.footerButtons.prepend(skip)
     },
     // Fin du tour, bouton Passer, Échap ou clic sur le fond : l'onboarding est marqué comme fait
-    onDestroyed: () => markOnboardingDone(),
+    onDestroyed: () => {
+      markOnboardingDone()
+      goTab('generator')
+    },
   })
   window.scrollTo({ top: 0 })
   tour.drive()

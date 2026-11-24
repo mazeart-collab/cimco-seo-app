@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { HelpCircle } from 'lucide-react'
+import { HelpCircle, ListOrdered, PenSquare } from 'lucide-react'
 import { buildCommunes, SEED_TREATED, seoBreakdown, seoLevel } from './lib/data'
 import { enrich, loadGeoCache } from './lib/geo'
 import { cachedDvf } from './lib/api'
 import { buildTemplatePage, buildSections } from './lib/page'
 import CommunePicker from './components/CommunePicker'
-import { Stepper } from './components/Steps'
 import Editor from './components/Editor'
 import SitePreview from './components/SitePreview'
 import { IntroScreen, startTour, isOnboardingDone, markOnboardingDone } from './components/Onboarding'
@@ -33,6 +32,7 @@ const save = (key, v) => {
 
 export default function App() {
   const communes = useMemo(buildCommunes, [])
+  const [tab, setTab] = useState('communes') // communes | generator
   const [selected, setSelected] = useState(null)
   const [geo, setGeo] = useState(loadGeoCache)
   const [geoState, setGeoState] = useState('loading') // loading | ok | partial
@@ -56,7 +56,7 @@ export default function App() {
   const beginTour = () => {
     setIntro(false)
     // Laisse l'écran de présentation se fermer avant de mesurer les éléments
-    requestAnimationFrame(() => startTour())
+    requestAnimationFrame(() => startTour(setTab))
   }
 
   useEffect(() => {
@@ -169,9 +169,6 @@ export default function App() {
   )
 
   const nextCommune = ranked.find((c) => c.status === 'a_creer')
-  // Étape 4 : communes dont la page a été copiée pendant la session
-  const [exported, setExported] = useState({})
-  const markExported = useCallback((name) => setExported((prev) => (prev[name] ? prev : { ...prev, [name]: true })), [])
   // Route "#/apercu/{commune}?device=mobile" : page d'aperçu autonome (nouvel onglet)
   const [hash, setHash] = useState(() => location.hash)
   useEffect(() => {
@@ -190,7 +187,7 @@ export default function App() {
   return (
     <div className="min-h-screen">
       <header className="border-b border-[#1a1a1812] bg-white">
-        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2">
             <img src="/cimco-logo.webp" alt="Cimco" width="30" height="34" className="h-9 w-auto" />
             <div>
@@ -199,6 +196,23 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+          <nav data-tour="tabs" className="flex gap-1 rounded-lg bg-slate-100 p-1">
+            {[
+              ['communes', 'Recommandations / Communes', ListOrdered],
+              ['generator', 'Générateur', PenSquare],
+            ].map(([id, label, Icon]) => (
+              <button
+                key={id}
+                onClick={() => setTab(id)}
+                aria-current={tab === id ? 'page' : undefined}
+                className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition ${tab === id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800'}`}
+              >
+                <Icon size={15} />
+                <span className={id === 'communes' ? 'hidden sm:inline' : ''}>{label}</span>
+                {id === 'communes' && <span className="sm:hidden">Communes</span>}
+              </button>
+            ))}
+          </nav>
           <button
             data-tour="guide"
             onClick={() => setIntro(true)}
@@ -213,14 +227,10 @@ export default function App() {
       </header>
       {intro && <IntroScreen onStart={beginTour} onSkip={skipOnboarding} />}
 
-      {current && (
-        <Stepper
-          done={[true, !!pages[pageKey(eff(current))] || current.status === 'traitee', !!exported[current.name], !!exported[current.name]]}
-        />
-      )}
-
-      <main className="mx-auto max-w-5xl px-4 py-5">
-        {current && (
+      <main className="mx-auto max-w-7xl px-4 py-5">
+        {tab === 'communes' ? (
+          <CommunePicker rows={ranked} current={current?.name} geoState={geoState} onPick={(name) => { setSelected(name); setTab('generator'); window.scrollTo({ top: 0 }) }} />
+        ) : current && (
             <Editor
               key={current.name}
               commune={eff(current)}
@@ -238,8 +248,7 @@ export default function App() {
               onSavePage={savePage}
               onStatus={setCommuneStatus}
               onDvf={() => setDvfTick((t) => t + 1)}
-              onExported={markExported}
-              picker={<CommunePicker rows={ranked} current={current.name} geoState={geoState} onPick={setSelected} />}
+              onChange={() => setTab('communes')}
             />
         )}
       </main>

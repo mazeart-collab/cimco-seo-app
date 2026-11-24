@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { Search, Sparkles, ChevronDown } from 'lucide-react'
+import { Search, Sparkles } from 'lucide-react'
 import { norm, fmtNum } from '../lib/data'
 import Queue from './Queue'
 
-// Étape 1 : recherche + recommandations (communes à créer les mieux classées) + classement complet replié
+// Onglet Communes : recherche + recommandations (communes à créer les mieux classées) + classement complet
 export default function CommunePicker({ rows, current, geoState, onPick }) {
   const [q, setQ] = useState('')
   const query = norm(q)
   const list = query ? rows.filter((r) => norm(r.name).includes(query) || r.cp.startsWith(q.trim())).slice(0, 6) : rows.filter((r) => r.status === 'a_creer').slice(0, 5)
 
   return (
-    <div data-tour="picker">
+    <div className="space-y-5">
+      <section data-tour="picker" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <h2 className="text-lg font-semibold">Choisir une commune</h2>
+      <p className="mb-4 text-sm text-slate-500">Recherchez une commune ou partez d'une recommandation, classée par potentiel SEO. Un clic ouvre le générateur.</p>
       <label className="relative block">
         <Search size={16} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
         <input
@@ -35,7 +38,7 @@ export default function CommunePicker({ rows, current, geoState, onPick }) {
       {list.length === 0 ? (
         <p className="mt-2 text-sm text-slate-500">Aucune commune ne correspond à cette recherche.</p>
       ) : (
-        <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+        <ul className="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {list.map((r) => {
             const on = r.name === current
             return (
@@ -65,15 +68,9 @@ export default function CommunePicker({ rows, current, geoState, onPick }) {
         </ul>
       )}
 
-      <details className="group mt-3">
-        <summary className="inline-flex cursor-pointer list-none items-center gap-1 text-sm font-medium text-slate-600 hover:text-slate-900">
-          Voir le classement complet ({rows.length} communes)
-          <ChevronDown size={15} className="transition group-open:rotate-180" />
-        </summary>
-        <div className="mt-3">
-          <Queue rows={rows} geoState={geoState} onOpen={onPick} />
-        </div>
-      </details>
+      </section>
+
+      <Queue rows={rows} geoState={geoState} onOpen={onPick} />
     </div>
   )
 }
