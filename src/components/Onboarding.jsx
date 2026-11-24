@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react'
-import { flushSync } from 'react-dom'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
 import { Lightbulb, Wrench, Rocket, Compass, ArrowRight, X } from 'lucide-react'
@@ -150,23 +149,18 @@ export function IntroScreen({ onStart, onSkip }) {
   )
 }
 
-// Tour guidé (étape 2) : chaque étape indique l'onglet où se trouve son élément
+// Tour guidé (étape 2) : suit les 4 étapes de l'interface, dans l'ordre
 const STEPS = [
-  { tab: 'queue', el: '[data-tour="tabs"]', title: 'Deux espaces de travail', text: "La file de priorité classe les communes, l'éditeur sert à créer et ajuster chaque page." },
-  { tab: 'queue', el: '[data-tour="banner"]', title: 'La commune recommandée', text: "L'outil propose la prochaine page à créer, avec ses chiffres clés. Un clic ouvre directement l'éditeur." },
-  { tab: 'queue', el: '[data-tour="queue"]', title: 'La file de priorité', text: 'Les communes sont classées par potentiel SEO : annonces Cimco actives et population. Cliquez sur une ligne pour ouvrir sa page.' },
-  { tab: 'editor', el: '[data-tour="commune"]', title: 'Choisir la commune', text: 'Sélectionnez la commune à travailler. Ses données réelles (population, prix moyens DVF, annonce Cimco) se chargent ici.' },
-  { tab: 'editor', el: '[data-tour="photo"]', title: 'Illustrer la page', text: 'Choisissez une photo libre de la commune, ou collez votre propre image avec son crédit.' },
-  { tab: 'editor', el: '[data-tour="consignes"]', title: "Donner ses consignes à l'IA", text: 'Précisez le ton, un angle ou une section à revoir. Claude rédige à partir des données de la commune.' },
-  { tab: 'editor', el: '[data-tour="generate"]', title: 'Générer la page', text: 'Lancez la rédaction avec vos consignes personnalisées via « Générer / Modifier », ou en un clic sans consigne via « Génération rapide » ; la page est ensuite enregistrée.' },
-  { tab: 'editor', el: '[data-tour="similarity"]', title: 'Contrôler la similarité', text: "Chaque page est comparée aux pages déjà traitées. Au-delà de 40 %, l'outil alerte d'un risque de contenu dupliqué." },
-  { tab: 'editor', el: '[data-tour="preview"]', title: "L'aperçu en direct", text: 'Le rendu final de la page, en version desktop ou mobile, et en plein écran dans le cadre du site.' },
-  { tab: 'editor', el: '[data-tour="export"]', title: 'Exporter vers HubSpot', text: 'Copiez le HTML brut pour un module texte, ou le HTML autonome avec son CSS pour un module personnalisé.' },
-  { tab: null, el: '[data-tour="guide"]', title: 'Revoir ce guide', text: 'Ce bouton relance la présentation et la visite à tout moment, pratique pour une démonstration.' },
+  { el: '[data-tour="stepper"]', title: 'Un parcours en 4 étapes', text: "La barre de progression indique où vous en êtes : choisir, générer, vérifier, exporter. Un clic sur une étape y mène directement." },
+  { el: '[data-tour="step-1"]', title: '1. Choisir une commune', text: "Recherchez une commune ou partez des recommandations, classées par potentiel SEO. Le résumé confirme que ses données réelles sont prêtes." },
+  { el: '[data-tour="generate"]', title: '2. Générer la page', text: 'Un clic suffit : Claude rédige une page unique à partir des données de la commune, et elle est enregistrée.' },
+  { el: '[data-tour="options"]', title: 'Options de personnalisation', text: "Facultatif : donnez vos consignes à l'IA pour ajuster le ton ou une section, ou changez la photo de la page." },
+  { el: '[data-tour="step-3"]', title: '3. Vérifier le SEO et le rendu', text: "Après génération : aperçu Google avec contrôle d'unicité des métadonnées et du texte, puis rendu de la page ou son code HTML." },
+  { el: '[data-tour="step-4"]', title: '4. Exporter vers HubSpot', text: 'Copiez le HTML/CSS de la page et ses métadonnées SEO, prêts à coller dans HubSpot.' },
+  { el: '[data-tour="guide"]', title: 'Revoir ce guide', text: 'Ce bouton relance la présentation et la visite à tout moment, pratique pour une démonstration.' },
 ]
 
-export function startTour(setTab) {
-  const goTab = (tab) => tab && flushSync(() => setTab(tab))
+export function startTour() {
   const tour = driver({
     showProgress: true,
     progressText: '{{current}} / {{total}}',
@@ -181,11 +175,7 @@ export function startTour(setTab) {
     smoothScroll: true,
     popoverClass: 'cimco-tour',
     steps: STEPS.map((s) => ({
-      // L'onglet est affiché (rendu synchrone) avant que driver.js ne mesure l'élément
-      element: () => {
-        goTab(s.tab)
-        return document.querySelector(s.el)
-      },
+      element: () => document.querySelector(s.el),
       popover: { title: s.title, description: s.text },
     })),
     onPopoverRender: (popover) => {
@@ -197,12 +187,9 @@ export function startTour(setTab) {
       popover.footerButtons.prepend(skip)
     },
     // Fin du tour, bouton Passer, Échap ou clic sur le fond : l'onboarding est marqué comme fait
-    onDestroyed: () => {
-      markOnboardingDone()
-      goTab('queue')
-    },
+    onDestroyed: () => markOnboardingDone(),
   })
-  goTab('queue')
+  window.scrollTo({ top: 0 })
   tour.drive()
   return tour
 }
