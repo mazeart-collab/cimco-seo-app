@@ -152,11 +152,18 @@ export function IntroScreen({ onStart, onSkip }) {
 
 // Tour guidé (étape 2) : chaque étape indique l'onglet où se trouve son élément
 const STEPS = [
-  { tab: 'communes', el: '[data-tour="picker"]', title: '1. Choisir une commune', text: "Dans l'onglet Recommandations / Communes, recherchez une commune ou partez des recommandations classées par potentiel SEO. Un clic ouvre le générateur." },
-  { tab: 'generator', el: '[data-tour="generation"]', title: '2. Générer la page', text: "Un clic sur « Générer la page SEO » suffit. Les options de personnalisation permettent d'ajouter des consignes à l'IA." },
+  { tab: 'communes', el: '[data-tour="tabs"]', title: 'Deux onglets', text: "« Recommandations / Communes » sert à choisir la commune à traiter. « Générateur » est l'espace de travail où la page est créée, vérifiée et exportée." },
+  { tab: 'communes', el: '[data-tour="picker"]', title: '1. Choisir une commune', text: 'Recherchez une commune ou un code postal, ou partez des recommandations prioritaires. Un clic ouvre directement le générateur.' },
+  { tab: 'communes', el: '[data-tour="queue"]', title: 'Le classement complet', text: 'Toutes les communes, classées par potentiel SEO (annonces Cimco actives et population). Les filtres séparent les pages à créer et celles déjà traitées.' },
+  { tab: 'generator', el: '[data-tour="summary"]', title: 'La commune sélectionnée', text: "Ses données réelles en un coup d'œil : département, annonces Cimco, prix moyen DVF. « Changer » ramène à la liste des communes." },
+  { tab: 'generator', el: '[data-tour="generation"]', title: '2. Générer la page', text: 'Un clic sur « Générer la page SEO » suffit : Claude rédige une page unique à partir des données de la commune.' },
+  { tab: 'generator', el: '[data-tour="options"]', title: 'Options de personnalisation', text: "Facultatif : ajoutez des consignes à l'IA (ton, angle, section à revoir) puis lancez « Générer avec ces consignes »." },
   { tab: 'generator', el: '[data-tour="photo"]', title: 'Choisir la photo', text: 'Vignette de la photo actuelle, photos libres de la commune à choisir en un clic, ou votre propre image par URL.' },
-  { tab: 'generator', el: '[data-tour="meta"]', title: "3. Vérifier le SEO et l'aperçu", text: "Meta Title et Meta Description avec leurs compteurs et le contrôle anti-duplication. Juste en dessous, le rendu visuel de la page ou son code HTML." },
+  { tab: 'generator', el: '[data-tour="meta"]', title: '3. Aperçu Google et métadonnées', text: "Meta Title et Meta Description avec leurs compteurs de caractères, et un badge qui signale une formule trop proche d'une autre commune." },
+  { tab: 'generator', el: '[data-tour="similarity"]', title: 'Contrôle anti-duplication', text: 'Le texte de la page est comparé aux pages déjà traitées. Au-delà de 40 % de similarité, une alerte invite à reformuler.' },
+  { tab: 'generator', el: '[data-tour="view-tabs"]', title: 'Aperçu visuel ou code HTML', text: 'Basculez entre le rendu de la page (desktop, mobile, plein écran) et le code HTML complet.' },
   { tab: 'generator', el: '[data-tour="export"]', title: '4. Exporter vers HubSpot', text: 'Copiez le HTML/CSS prêt à publier et les métadonnées SEO, puis collez-les dans HubSpot.' },
+  { tab: null, el: '[data-tour="guide"]', title: 'Revoir ce guide', text: 'Ce bouton rouvre la présentation et relance la visite à tout moment, pratique pour une démonstration.' },
 ]
 
 export function startTour(setTab) {

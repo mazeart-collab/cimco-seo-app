@@ -407,7 +407,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
       <div data-tour="result" className="min-w-0 space-y-4">
         <SeoMeta commune={c.name} title={sections.metaTitle} description={sections.metaDescription} similarity={metaSimilarity} threshold={META_THRESHOLD} />
 
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
+        <div data-tour="similarity" className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm">
           <span className="font-medium">Contenu de la page :</span>
           {similarity.compared ? (
             <span className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${risky ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'}`}>
@@ -423,7 +423,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
         </div>
 
         <div data-tour="preview">
-          <div role="tablist" className="mb-3 inline-flex gap-1 rounded-lg bg-slate-100 p-1">
+          <div data-tour="view-tabs" role="tablist" className="mb-3 inline-flex gap-1 rounded-lg bg-slate-100 p-1">
             {[
               ['preview', 'Aperçu visuel', Eye],
               ['code', 'Code HTML', Code2],
