@@ -10,7 +10,8 @@ import Editor from './components/Editor'
 import SitePreview from './components/SitePreview'
 import { IntroScreen, startTour, isOnboardingDone, markOnboardingDone } from './components/Onboarding'
 
-const STATUS_KEY = 'cimco.status.v1'
+// Changer de version remet les statuts à l'état initial chez tous les visiteurs
+const STATUS_KEY = 'cimco.status.v2'
 const PAGES_KEY = 'cimco.pages.v1'
 const IMAGES_KEY = 'cimco.images.v1'
 const SIM_KEY = 'cimco.sim0.v1'
