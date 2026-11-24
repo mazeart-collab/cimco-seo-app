@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { flushSync } from 'react-dom'
 import { driver } from 'driver.js'
 import 'driver.js/dist/driver.css'
-import { Lightbulb, Wrench, Rocket, ArrowRight, X } from 'lucide-react'
+import { Lightbulb, Wrench, Rocket, Compass, ArrowRight, X } from 'lucide-react'
 
 export const ONBOARDING_KEY = 'cimco_onboarding_done'
 
@@ -22,33 +22,54 @@ export const markOnboardingDone = () => {
   }
 }
 
+// Contenu des cartes : paragraphes (avec intitulé en gras facultatif) puis liste éventuelle
 const BLOCKS = [
   {
     icon: Lightbulb,
     title: 'La genèse du projet',
-    text: "Cimco a besoin de pages SEO locales de qualité pour attirer des acheteurs sans dépendre uniquement de SeLoger et Leboncoin. Écrire chaque page à la main prend du temps, et le copier-coller générique est sanctionné par Google. Cette app produit des pages propres à chaque commune, sans partir d'une feuille blanche.",
+    paras: [
+      ['Le constat :', "L'acquisition repose aujourd'hui largement sur SeLoger et Leboncoin. C'est efficace et c'est la norme du secteur, mais cela crée une dépendance forte : si ces plateformes changent leurs tarifs ou leurs règles, le canal est immédiatement impacté."],
+      ['Le choix du SEO local :', "Le référencement naturel est un actif durable, cumulatif et indépendant. Pour Cimco, il doit être local afin de capter l'intention précise d'un particulier qui cherche à faire construire dans une commune précise."],
+      ['La réponse :', 'Une page dédiée par commune. Rédiger chaque page à la main est chronophage, et Google pénalise les pages copiées-collées où seul le nom de la ville change. Cet outil génère des pages uniques, ancrées dans des données réelles et prêtes à publier.'],
+    ],
   },
   {
     icon: Wrench,
     title: 'Comment c’est fait',
+    paras: [[null, "Prototype conçu rapidement en mobilisant l'IA sur toute la chaîne (conception et arbitrage avec Gemini, développement assisté avec Claude Code) et en combinant plusieurs briques techniques :"]],
     list: [
-      ['Développement', 'assisté par IA avec Claude (React, Vite, Tailwind CSS)'],
-      ['Hébergement', 'Vercel, avec des fonctions serveur qui gardent la clé API'],
-      ['Rédaction', "API Anthropic Claude, appelée seulement à la demande et avec une limite d'utilisation"],
-      ['Prix immobiliers', 'données réelles DVF publiées sur data.gouv.fr, en moyennes par commune'],
-      ['Communes', 'population et codes officiels via geo.api.gouv.fr'],
-      ['Visuels', 'photos libres de Wikimedia Commons, crédits inclus'],
+      ['Interface & hébergement :', 'React, Vite, Tailwind CSS, déployé sur Vercel avec des fonctions serveur sécurisant les clés API.'],
+      ['Rédaction IA :', 'API Anthropic Claude branchée à la demande, avec un coût marginal très faible (~0,01 € par page) et des garde-fous anti-hallucination sur les chiffres.'],
+      ['Données réelles (APIs) :', 'Prix immobiliers issus des données DVF (data.gouv.fr), informations communales via geo.api.gouv.fr, et visuels libres de droits via Wikimedia Commons (crédits inclus).'],
     ],
   },
   {
     icon: Rocket,
     title: 'À quoi ça sert',
-    text: "Générer en quelques secondes une page locale clé en main, en HTML et CSS prêts à intégrer dans HubSpot. Chaque page est enrichie de vraies données de marché et des annonces Cimco du secteur, puis contrôlée contre le contenu dupliqué. Elle est pensée pour le référencement et la conversion.",
+    paras: [
+      [null, 'Passer de plusieurs heures de rédaction manuelle à quelques secondes pour produire une page locale complète, en HTML et CSS prêts à intégrer dans HubSpot.'],
+      [null, "Chaque page combine des données de marché vérifiées, les annonces Cimco du secteur, un ancrage territorial, une FAQ utile et un formulaire de rappel. Un contrôle automatique vérifie l'unicité du texte contre le contenu dupliqué, permettant de déployer des dizaines de communes en une après-midi pour réduire progressivement la dépendance aux portails payants."],
+    ],
+  },
+  {
+    icon: Compass,
+    title: "Limites actuelles & pistes d'évolution",
+    paras: [[null, 'Cet outil est une V1 fonctionnelle, pensée pour être améliorée en conditions réelles :']],
+    list: [
+      ["Base d'annonces statique :", "Les annonces sont extraites du site à un instant T ; l'étape suivante consiste à brancher le flux ou la base de données Cimco en direct."],
+      ['Intégration HubSpot :', "Le code exporté devra être adapté à la structure réelle du thème HubSpot de Cimco, puis automatisé (création de brouillons via l'API HubSpot)."],
+      ['Calibrage métier :', "Réalisé en temps limité, le discours (arguments commerciaux, objections clients, spécificités terrain) gagne à être affiné avec l'équipe."],
+      ['Visuels & petites communes :', 'Remplacer à terme les photos Wikimedia par de vraies réalisations Cimco, et ajouter un repli départemental quand les ventes DVF sont trop rares sur une commune.'],
+      ['Boucle de mesure :', "L'outil n'est pas encore relié à la Search Console ni à HubSpot pour identifier quels angles rédactionnels génèrent le plus de clics et de demandes de rappel."],
+    ],
   },
 ]
 
 // Écran de présentation plein écran (étape 1)
 export function IntroScreen({ onStart, onSkip }) {
+  const startRef = useRef(null)
+  // Focus clavier sur le bouton principal sans faire défiler l'écran jusqu'en bas
+  useEffect(() => startRef.current?.focus({ preventScroll: true }), [])
   useEffect(() => {
     const prev = document.body.style.overflow
     document.body.style.overflow = 'hidden'
@@ -74,11 +95,11 @@ export function IntroScreen({ onStart, onSkip }) {
         <h1 id="intro-title" className="mt-2 max-w-2xl font-display text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl">
           Des pages « Faire construire à [commune] » prêtes à publier
         </h1>
-        <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-slate-600">En deux minutes : pourquoi cet outil existe, comment il fonctionne, puis une visite guidée de l'interface.</p>
+        <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-slate-600">Un prototype fonctionnel pour industrialiser le SEO local de Cimco — sa genèse, son architecture, ses usages et ses limites actuelles.</p>
 
-        <div className="mt-8 grid w-full gap-4 text-left md:grid-cols-3">
-          {BLOCKS.map(({ icon: Icon, title, text, list }, i) => (
-            <section key={title} className="flex flex-col rounded-[20px] border border-[#1a1a18]/[.08] bg-white p-6 shadow-[0_1px_2px_rgba(26,26,24,.04),0_8px_24px_rgba(26,26,24,.06)]">
+        <div className="mt-8 grid w-full gap-5 text-left md:grid-cols-2">
+          {BLOCKS.map(({ icon: Icon, title, paras, list }, i) => (
+            <section key={title} className="flex flex-col rounded-[20px] border border-[#1a1a18]/[.08] bg-white p-6 sm:p-7 shadow-[0_1px_2px_rgba(26,26,24,.04),0_8px_24px_rgba(26,26,24,.06)]">
               <div className="flex items-center gap-3">
                 <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#cfe3ec] text-[#4a6a78]">
                   <Icon size={19} />
@@ -86,12 +107,19 @@ export function IntroScreen({ onStart, onSkip }) {
                 <span className="text-xs font-semibold text-slate-400">0{i + 1}</span>
               </div>
               <h2 className="mt-4 font-display text-lg font-extrabold">{title}</h2>
-              {text && <p className="mt-2 text-sm leading-relaxed text-slate-600">{text}</p>}
+              {paras.map(([k, v]) => (
+                <p key={v} className="mt-2.5 text-sm leading-relaxed text-slate-600">
+                  {k && <strong className="font-semibold text-[#1a1a18]">{k}</strong>} {v}
+                </p>
+              ))}
               {list && (
-                <ul className="mt-2 space-y-2 text-sm leading-snug text-slate-600">
+                <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-slate-600">
                   {list.map(([k, v]) => (
-                    <li key={k}>
-                      <strong className="font-semibold text-[#1a1a18]">{k} :</strong> {v}
+                    <li key={k} className="flex gap-2.5">
+                      <span className="mt-[.55rem] h-1.5 w-1.5 shrink-0 rounded-full bg-[#8fabb9]" />
+                      <span>
+                        <strong className="font-semibold text-[#1a1a18]">{k}</strong> {v}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -101,8 +129,8 @@ export function IntroScreen({ onStart, onSkip }) {
         </div>
 
         <button
+          ref={startRef}
           onClick={onStart}
-          autoFocus
           className="mt-8 inline-flex items-center gap-2 rounded-full bg-[#4a6a78] px-8 py-4 text-base font-bold text-white shadow-[0_8px_24px_rgba(74,106,120,.35)] transition hover:-translate-y-px hover:brightness-95"
         >
           Commencer l'onboarding <ArrowRight size={18} />
