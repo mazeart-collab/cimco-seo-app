@@ -36,9 +36,12 @@ const BLOCKS = [
   {
     icon: Rocket,
     title: 'À quoi ça sert',
-    paras: [
-      [null, 'Passer de plusieurs heures de rédaction manuelle à quelques secondes pour produire une page locale complète, en HTML et CSS prêts à intégrer dans HubSpot.'],
-      [null, "Chaque page combine des données de marché vérifiées, les annonces Cimco du secteur, un ancrage territorial, une FAQ utile et un formulaire de rappel. Un contrôle automatique vérifie l'unicité du texte contre le contenu dupliqué, permettant de déployer des dizaines de communes en une après-midi pour réduire progressivement la dépendance aux portails payants."],
+    paras: [['Cet outil est un', 'constructeur de pages SEO locales pour Cimco', '. Concrètement, il fait quatre choses :']],
+    list: [
+      ['Recommander les communes prioritaires :', 'Il identifie et suggère les pages locales les plus pertinentes à créer en priorité selon la présence et le potentiel du secteur.'],
+      ['Croiser des données réelles :', 'Pour chaque commune, il récupère automatiquement les données publiques (prix des terrains et des maisons via DVF / data.gouv.fr, population via geo.api.gouv.fr, visuels locaux via Wikimedia) et les croise avec les annonces Cimco disponibles sur la zone.'],
+      ["Générer la page avec l'IA :", "L'outil est directement connecté à l'API Claude (Anthropic) pour rédiger un contenu unique à partir de ces données croisées, en évitant le contenu dupliqué sanctionné par Google."],
+      ['Livrer un rendu prêt à publier :', 'En quelques secondes, il produit une page complète (chiffres clés, annonces locales, ancrage territorial, FAQ et formulaire de rappel) exportable en HTML/CSS pour HubSpot.'],
     ],
   },
   {
@@ -107,11 +110,17 @@ export function IntroScreen({ onStart, onSkip }) {
                 <span className="text-xs font-semibold text-slate-400">0{i + 1}</span>
               </div>
               <h2 className="mt-4 font-display text-lg font-extrabold">{title}</h2>
-              {paras.map(([k, v]) => (
-                <p key={v} className="mt-2.5 text-sm leading-relaxed text-slate-600">
-                  {k && <strong className="font-semibold text-[#1a1a18]">{k}</strong>} {v}
-                </p>
-              ))}
+              {paras.map((para) => {
+                // [intitulé en gras, texte] ou [texte avant, passage en gras, texte après]
+                const [pre, bold, post] = para.length === 3 ? para : [null, ...para]
+                return (
+                  <p key={para.join('|')} className="mt-2.5 text-sm leading-relaxed text-slate-600">
+                    {pre && `${pre} `}
+                    {bold && <strong className="font-semibold text-[#1a1a18]">{bold}</strong>}
+                    {post && (/^[.,;:]/.test(post) ? post : ` ${post}`)}
+                  </p>
+                )
+              })}
               {list && (
                 <ul className="mt-3 space-y-2.5 text-sm leading-relaxed text-slate-600">
                   {list.map(([k, v]) => (
