@@ -64,6 +64,7 @@ const BLOCKS = [
       ['Calibrage métier :', "Réalisé en temps limité, le discours (arguments commerciaux, objections clients, spécificités terrain) gagne à être affiné avec l'équipe."],
       ['Visuels & petites communes :', 'Remplacer à terme les photos Wikimedia par de vraies réalisations Cimco, et ajouter un repli départemental quand les ventes DVF sont trop rares sur une commune.'],
       ['Boucle de mesure :', "L'outil n'est pas encore relié à la Search Console ni à HubSpot pour identifier quels angles rédactionnels génèrent le plus de clics et de demandes de rappel."],
+      ['Parcours de conversion à optimiser :', "Le formulaire actuel est une base simple. Il pourra être enrichi par la suite (simulateur de budget ou d'éligibilité, prise de rendez-vous directe, pré-qualification du projet, ou tests A/B sur les appels à l'action) pour maximiser le taux de transformation des visiteurs en leads qualifiés."],
     ],
   },
 ]
