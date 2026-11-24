@@ -102,7 +102,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
 
   // quick : génération rapide, consignes par défaut uniquement (ni consigne ni texte actuel envoyés)
   const payload = (quick = false) => ({
-    commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => n.name) },
+    commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => `${n.name} (${n.depName})`) },
     dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison, repere: dvf.repere } : null,
     instructions: quick ? '' : instructions,
     current: !quick && hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget, faq: sections.faq } : null,

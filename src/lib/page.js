@@ -8,6 +8,13 @@ export const LISTINGS_URL = 'https://cimco.fr/annonces-maisons-terrains'
 
 // ---------- Texte par défaut (données réelles uniquement, sans nom de source dans les paragraphes) ----------
 
+// Préposition correcte devant le nom du département ("dans le Rhône", "en Isère"...)
+const DANS = { '01': "dans l'Ain", '42': 'dans la Loire', '26': 'dans la Drôme', '69': 'dans le Rhône' }
+export const inDep = (c) => DANS[c.dep] || `en ${c.depName}`
+
+// Zone exacte des autres annonces affichées : le département si elles y sont toutes, sinon la région
+export const listingsZone = (c, neighbors) => (neighbors.every((n) => n.dep === c.dep) ? inDep(c) : 'en Auvergne-Rhône-Alpes')
+
 const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`
 
 // Sources affichées uniquement en note de bas de bloc (.cl-note)
@@ -49,23 +56,23 @@ function templateFaq(c, dvf) {
     },
     {
       q: `Quelle différence entre un courtier en construction et un constructeur ?`,
-      a: `Le constructeur vend sa propre gamme de maisons. Le courtier, lui, travaille pour vous : il met en concurrence plusieurs constructeurs sélectionnés, compare les offres à cahier des charges égal et vous accompagne jusqu'à la remise des clés, en ${c.depName} comme dans toute la région.`,
+      a: `Le constructeur vend sa propre gamme de maisons. Le courtier, lui, travaille pour vous : il met en concurrence plusieurs constructeurs sélectionnés, compare les offres à cahier des charges égal et vous accompagne jusqu'à la remise des clés, ${inDep(c)} comme dans toute la région.`,
     },
   ]
 }
 
 export function buildTemplatePage(c, info, dvf, neighbors) {
   const a = c.annonce
-  const intro = `Faire construire à ${c.name}, c'est choisir une maison pensée pour votre famille, dans un cadre que vous aimez. Cimco, courtier en construction de maisons individuelles en ${c.depName}, vous accompagne de la recherche du terrain jusqu'à la remise des clés.`
+  const intro = `Faire construire à ${c.name}, c'est choisir une maison pensée pour votre famille, dans un cadre que vous aimez. Cimco, courtier en construction de maisons individuelles ${inDep(c)}, vous accompagne de la recherche du terrain jusqu'à la remise des clés.`
 
   const names = neighbors.map((n) => n.name).join(', ')
   let local
   if (a) {
     local = `${c.name} fait partie des communes où Cimco propose ${c.nbAnnonces > 1 ? 'plusieurs projets' : 'un projet'} terrain et maison prêt à étudier, avec un budget connu dès le départ.`
-    if (neighbors.length) local += ` Vous hésitez encore sur le secteur ? D'autres projets sont disponibles en ${c.depName}, à ${names}.`
+    if (neighbors.length) local += ` Vous hésitez encore sur le secteur ? D'autres projets sont disponibles ailleurs ${listingsZone(c, neighbors)}, à ${names}.`
   } else {
     local = `Aucune annonce n'est publiée à ${c.name} en ce moment, ce qui ne vous empêche pas d'y construire : Cimco prospecte les terrains de la commune et des environs pour vous.`
-    if (neighbors.length) local += ` En attendant, des projets sont déjà disponibles à proximité, à ${names}.`
+    if (neighbors.length) local += ` En attendant, des projets sont déjà disponibles ailleurs ${listingsZone(c, neighbors)}, à ${names}.`
   }
 
   const budget = `Un budget de construction se construit en trois blocs. Le terrain, avec les frais de notaire. La maison, dont le prix est fixé dans le contrat de construction (CCMI) avec ses garanties de prix, de délais et de livraison. Enfin les frais annexes : viabilisation, raccordements aux réseaux, étude de sol et taxe d'aménagement.${
@@ -145,19 +152,18 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
     h1: page.h1,
     image,
     badges: [`${c.depName} (${c.dep})`, c.cp, ...(a ? [plural(c.nbAnnonces, 'projet Cimco')] : [])],
-    heroCta: a ? 'Étudier ce projet avec un conseiller' : 'Lancer ma recherche de terrain',
+    heroCta: a ? `Étudier mon projet à ${c.name}` : 'Lancer ma recherche de terrain',
     intro: page.intro,
     figuresTitle: `${c.name} en chiffres`,
     figures,
     figuresNote,
-    localTitle: a ? `Construire à ${c.name} et alentours` : `Construire à ${c.name} : projets à proximité`,
+    localTitle: neighbors.length ? `Construire à ${c.name} et ${listingsZone(c, neighbors)}` : `Construire à ${c.name}`,
     local: page.local,
     listingsNote: 'Annonces publiées sur cimco.fr, sous réserve de disponibilité.',
     listings,
     budgetTitle: `Votre budget pour faire construire à ${c.name}`,
     budget: page.budget,
     breakdown,
-    budgetNote: sources.some((x) => x.startsWith('prix')) ? `Source des prix moyens : ${sources.filter((x) => x.startsWith('prix')).join(' ; ').replace(/^prix moyens?, /, '')}.` : '',
     midCtaTitle: `Un projet à ${c.name} ?`,
     midCta: 'Parler de mon budget à un conseiller',
     whyTitle: 'Pourquoi passer par un courtier en construction comme Cimco ?',
@@ -178,7 +184,7 @@ export function sectionsText(s) {
     s.localTitle, s.local,
     ...s.listings.flatMap((l) => [l.title, l.place, l.budget, 'Voir le projet']), s.listingsNote,
     s.budgetTitle, s.budget,
-    ...s.breakdown.flatMap((b) => [b.label, b.value]), s.budgetNote,
+    ...s.breakdown.flatMap((b) => [b.label, b.value]),
     s.midCtaTitle, s.midCta,
     s.whyTitle, s.why, ...s.whyPoints.flatMap((p) => [p.title, p.text]),
     s.faqTitle, ...s.faq.flatMap((f) => [f.q, f.a]),
@@ -327,7 +333,7 @@ export function pageToHtml(s, mode = 'raw') {
   const body = `<div class="cimco-local">
 ${band('', hero)}
 ${s.figures.length ? band('alt', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}${note(s.figuresNote)}`) + '\n' : ''}${band('', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}${note(s.listingsNote)}`)}
-${band('alt', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n    ${breakdown}${note(s.budgetNote)}\n    <div class="cl-mid"><p>${esc(s.midCtaTitle)}</p>${cta(s.midCta, 'cl-link')}</div>`)}
+${band('alt', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n    ${breakdown}\n    <div class="cl-mid"><p>${esc(s.midCtaTitle)}</p>${cta(s.midCta, 'cl-link')}</div>`)}
 ${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    ${whyList}`)}
 ${band('', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
 ${band('soft', `    <h2>${esc(s.ctaTitle)}</h2>\n    <p>${esc(s.ctaText)}</p>\n    ${form}`, 'contact-cimco')}

@@ -81,19 +81,20 @@ Exactitude (règle absolue) :
 - Tous les chiffres (prix, surfaces, budgets, population, nombre de ventes, dates) viennent UNIQUEMENT du JSON fourni. N'invente aucun chiffre, prix, témoignage, avis client ni annonce.
 - Les prix DVF sont des moyennes par commune : ne parle jamais de ventes individuelles.
 - Ancrage local : tu peux décrire la situation géographique de la commune, les grands axes routiers, les villes et bassins d'emploi proches, le cadre de vie et les spécificités pour faire construire sur ce secteur (relief, type de terrains, caractère rural ou périurbain), uniquement à partir de connaissances générales dont tu es certain. Aucune statistique, distance chiffrée ou durée de trajet. En cas de doute, reste général.
-- Si annonce_cimco est null, aucune annonce n'est publiée dans la commune : dis-le positivement, explique que Cimco accompagne la recherche de terrain sur le secteur et cite les annonces voisines fournies.
+- Si annonce_cimco est null, aucune annonce n'est publiée dans la commune : dis-le positivement, explique que Cimco accompagne la recherche de terrain sur le secteur et cite les autres annonces fournies.
 
 Sources : ne cite JAMAIS de nom de source ou d'outil technique dans le texte (pas de "geo.api.gouv.fr", "DVF", "DGFiP", "geo-dvf", "data.gouv.fr", "INSEE", "Meilleurs Agents"). Écris par exemple "le prix moyen constaté des terrains à bâtir". Les sources sont affichées à part, en note de bas de bloc.
 
 Zéro répétition :
 - La page affiche déjà, dans des cartes chiffrées, la population, les prix moyens au m² avec leur nombre de ventes et leur période, et le budget des annonces Cimco.
 - Dans l'ensemble de ton texte (intro, local, budget, faq), chaque chiffre apparaît AU PLUS UNE FOIS. Ne répète jamais une surface, un prix exact, un nombre de ventes ou une période d'une section à l'autre.
-- Chaque section apporte un angle neuf : intro = promesse et projet de vie dans la commune ; local = ancrage géographique et projets Cimco sur place ou à proximité ; budget = structure d'un budget global ; faq = réponses pratiques.
+- Chaque section apporte un angle neuf : intro = promesse et projet de vie dans la commune ; local = ancrage géographique et projets Cimco dans la commune ou ailleurs dans le département ; budget = structure d'un budget global ; faq = réponses pratiques.
 - Ne cite jamais les codes de référence internes des annonces.
 
 Contenu attendu :
 - "intro" : 2 à 3 phrases d'accroche qui donnent envie de faire construire dans cette commune et présentent Cimco comme le partenaire du projet.
-- "local" : 3 à 5 phrases d'ancrage local (situation, axes, bassins d'emploi, cadre de vie, particularités du foncier), puis l'annonce Cimco de la commune ou les annonces voisines.
+- "local" : 3 à 5 phrases d'ancrage local (situation, axes, bassins d'emploi, cadre de vie, particularités du foncier), puis l'annonce Cimco de la commune et les autres annonces fournies.
+- Autres annonces (autres_annonces_cimco, au format "Commune (Département)") : elles peuvent se trouver à plusieurs dizaines de kilomètres. Ne les présente jamais comme "alentours", "à proximité", "voisines" ou "dans le secteur". Écris "ailleurs dans le département" (ou "ailleurs en Auvergne-Rhône-Alpes" si leur département diffère de celui de la commune) et cite leur nom.
 - "budget" : 3 à 5 phrases sur la structure d'un budget global de construction : le terrain (prix d'achat et frais de notaire), la maison (contrat de construction de maison individuelle, CCMI, avec ses garanties : prix ferme, délais, garantie de livraison, dommages-ouvrage), et les frais annexes (viabilisation, raccordements aux réseaux, étude de sol, taxe d'aménagement). Tu peux situer le terrain par rapport au prix moyen local si la donnée existe. Ne calcule jamais le prix d'un terrain en multipliant une surface par un prix moyen.
 - "faq" : exactement 5 questions qu'un vrai futur propriétaire se pose, avec des réponses de 2 à 4 phrases qui intègrent naturellement les données locales sans répéter les chiffres déjà cités : 1) les délais d'un projet de construction (permis de construire, chantier fixé au CCMI), 2) les étapes du projet, 3) le financement et le prêt à taux zéro (éligibilité selon revenus et zone, sans montant inventé), 4) comment bien choisir son terrain à [commune], 5) le rôle du courtier par rapport au constructeur. Questions formulées avec le nom de la commune quand c'est naturel.
 
@@ -124,7 +125,7 @@ export default async function handler(req, res) {
     departement: short(b.commune?.depName, 40),
     population: Number.isFinite(pop) ? pop : null,
     annonce_cimco: capJson(annonce, 2000),
-    annonces_voisines_departement: Array.isArray(b.commune?.neighbors) ? b.commune.neighbors.slice(0, 8).map((x) => short(x, 60)) : [],
+    autres_annonces_cimco: Array.isArray(b.commune?.neighbors) ? b.commune.neighbors.slice(0, 8).map((x) => short(x, 60)) : [],
     dvf: capJson(b.dvf, 3000),
   }
   if (!data.commune) return res.status(400).json({ error: 'commune_manquante' })

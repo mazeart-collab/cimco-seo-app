@@ -116,7 +116,6 @@ export default function Preview({ s }) {
             </li>
           ))}
         </ul>
-        {s.budgetNote && <p className={NOTE}>{s.budgetNote}</p>}
         <div className="mt-8 flex flex-wrap items-center justify-between gap-4 rounded-[20px] bg-white px-6 py-5">
           <p className="font-semibold">{s.midCtaTitle}</p>
           <a href="#contact-cimco" onClick={toContact} className="border-b-2 border-[#8fabb9] text-sm font-bold text-[#4a6a78] hover:border-[#4a6a78]">
