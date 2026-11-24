@@ -6,126 +6,130 @@ export const creditOf = (photo) =>
 
 export const LISTINGS_URL = 'https://cimco.fr/annonces-maisons-terrains'
 
-// ---------- Texte par défaut (données réelles uniquement) ----------
+// ---------- Texte par défaut (données réelles uniquement, sans nom de source dans les paragraphes) ----------
 
-const dvfMain = (dvf) => (dvf?.terrain ? ['terrain', dvf.terrain] : dvf?.maison ? ['maison', dvf.maison] : dvf?.repere ? ['repere', dvf.repere] : null)
+const plural = (n, w) => `${n} ${w}${n > 1 ? 's' : ''}`
 
-const repereText = (r) => `${fmtEur(r.prix_m2_moyen)} le m² (source : ${r.source}, ${r.periode}${r.type_bien ? ', ' + r.type_bien : ''})`
+// Sources affichées uniquement en note de bas de bloc (.cl-note)
+function sourcesOf(c, dvf) {
+  const out = []
+  if (c.population) out.push('population, INSEE via geo.api.gouv.fr')
+  if (dvf?.terrain || dvf?.maison) {
+    const periode = dvf.terrain?.periode || dvf.maison?.periode
+    out.push(`prix moyens, ${dvf.source}${periode ? ', ' + periode : ''}`)
+  } else if (dvf?.repere) {
+    out.push(`prix moyen, ${dvf.repere.source}, ${dvf.repere.periode}`)
+  }
+  return out
+}
+
+function templateFaq(c, dvf) {
+  const a = c.annonce
+  const terrainHint = dvf?.terrain
+    ? `Le prix moyen constaté des terrains à bâtir, rappelé plus haut, vous donne un premier repère pour négocier.`
+    : dvf?.maison
+      ? `Le prix moyen des maisons de la commune, rappelé plus haut, aide à situer la valeur du foncier.`
+      : `Cimco vous aide à situer les prix du foncier sur le secteur.`
+  return [
+    {
+      q: `Combien de temps faut-il pour faire construire à ${c.name} ?`,
+      a: `Comptez d'abord la recherche du terrain et l'étude du projet, puis l'instruction du permis de construire par la mairie de ${c.name}, qui prend au minimum deux mois pour une maison individuelle. La durée du chantier est ensuite fixée noir sur blanc dans votre contrat de construction (CCMI), ce qui vous protège des dérives.`,
+    },
+    {
+      q: `Quelles sont les étapes d'un projet de construction ?`,
+      a: `Définition du budget et du financement, recherche du terrain, choix du constructeur et des plans, signature du CCMI, obtention du permis de construire et du prêt, puis chantier et remise des clés. Cimco coordonne chacune de ces étapes avec vous.`,
+    },
+    {
+      q: `Puis-je bénéficier du prêt à taux zéro pour construire à ${c.name} ?`,
+      a: `Le PTZ peut financer une partie de l'achat d'une maison neuve. L'éligibilité dépend de vos revenus, de la composition du foyer et de la zone dans laquelle se situe ${c.name}. Votre conseiller Cimco vous aide à intégrer ces aides dans votre plan de financement.`,
+    },
+    {
+      q: `Comment bien choisir son terrain à ${c.name} ?`,
+      a: `Vérifiez les règles du plan local d'urbanisme, l'orientation, la pente, la nature du sol et la présence des réseaux en limite de parcelle. ${terrainHint}${a ? '' : ` Sans annonce publiée à ${c.name} en ce moment, Cimco recherche pour vous des terrains sur la commune et alentour.`}`,
+    },
+    {
+      q: `Quelle différence entre un courtier en construction et un constructeur ?`,
+      a: `Le constructeur vend sa propre gamme de maisons. Le courtier, lui, travaille pour vous : il met en concurrence plusieurs constructeurs sélectionnés, compare les offres à cahier des charges égal et vous accompagne jusqu'à la remise des clés, en ${c.depName} comme dans toute la région.`,
+    },
+  ]
+}
 
 export function buildTemplatePage(c, info, dvf, neighbors) {
   const a = c.annonce
-  const pop = info?.population
-  const intro =
-    `${c.name} (${c.cp}, ${c.depName}) : construisez votre maison avec Cimco.` +
-    (pop ? ` Population : ${fmtNum(pop)} habitants (source : geo.api.gouv.fr).` : '')
+  const intro = `Faire construire à ${c.name}, c'est choisir une maison pensée pour votre famille, dans un cadre que vous aimez. Cimco, courtier en construction de maisons individuelles en ${c.depName}, vous accompagne de la recherche du terrain jusqu'à la remise des clés.`
 
+  const names = neighbors.map((n) => n.name).join(', ')
   let local
   if (a) {
-    local = `À ${c.name}, Cimco propose par exemple un projet de maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}.`
-    if (c.nbAnnonces > 1) local = `${c.nbAnnonces} annonces à ${c.name}. ` + local
-    if (neighbors.length) local += ` Autres annonces Cimco en ${c.depName} : ${neighbors.map((n) => n.name).join(', ')}.`
+    local = `${c.name} fait partie des communes où Cimco propose ${c.nbAnnonces > 1 ? 'plusieurs projets' : 'un projet'} terrain et maison prêt à étudier, avec un budget connu dès le départ.`
+    if (neighbors.length) local += ` Vous hésitez encore sur le secteur ? D'autres projets sont disponibles en ${c.depName}, à ${names}.`
   } else {
-    local = `Aucune annonce n'est publiée à ${c.name} en ce moment, mais Cimco accompagne vos recherches de terrain sur le secteur.`
-    if (neighbors.length) local += ` Projets Cimco à proximité : ${neighbors.map((n) => n.name).join(', ')}.`
+    local = `Aucune annonce n'est publiée à ${c.name} en ce moment, ce qui ne vous empêche pas d'y construire : Cimco prospecte les terrains de la commune et des environs pour vous.`
+    if (neighbors.length) local += ` En attendant, des projets sont déjà disponibles à proximité, à ${names}.`
   }
 
-  const main = dvfMain(dvf)
-  let budget
-  if (main?.[0] === 'terrain') {
-    const t = main[1]
-    budget = `Terrain à bâtir : ${fmtEur(t.prix_m2_moyen)} le m² en moyenne, sur ${t.nb_transactions} vente${t.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${t.periode}).`
-  } else if (main?.[0] === 'maison') {
-    const m = main[1]
-    budget = `Prix moyen des maisons : ${fmtEur(m.prix_m2_moyen)} le m² habitable en moyenne, terrain inclus, sur ${m.nb_transactions} vente${m.nb_transactions > 1 ? 's' : ''} (source : ${dvf.source}, ${m.periode}).`
-  } else if (main?.[0] === 'repere') {
-    budget = `Prix immobilier moyen : ${repereText(main[1])}.`
-  } else if (a) {
-    budget = `À ${c.name}, Cimco propose par exemple un projet de maison au budget de ${fmtEur(a.budget)}.`
-  } else {
-    budget = `Cimco vous aide à définir votre budget terrain et maison à ${c.name}.`
-  }
+  const budget = `Un budget de construction se construit en trois blocs. Le terrain, avec les frais de notaire. La maison, dont le prix est fixé dans le contrat de construction (CCMI) avec ses garanties de prix, de délais et de livraison. Enfin les frais annexes : viabilisation, raccordements aux réseaux, étude de sol et taxe d'aménagement.${
+    dvf?.terrain || dvf?.maison || dvf?.repere ? ` Les prix moyens de ${c.name}, présentés plus haut, vous aident à caler la part du terrain.` : ''
+  }`
 
   return {
     h1: `Faire construire à ${c.name}`,
-    meta: `Faire construire une maison à ${c.name} (${c.depName}) avec Cimco : annonces terrain et maison, budget et prix moyens DVF.`,
+    meta: `Faire construire une maison à ${c.name} (${c.depName}) avec Cimco : terrains et projets disponibles, budget, prix moyens et accompagnement d'un courtier.`,
     intro,
     local,
     budget,
+    faq: templateFaq(c, dvf),
   }
 }
 
 // ---------- Structure de page complète (aperçu, HTML et similarité partagent la même source) ----------
 
+export const WHY_POINTS = [
+  { title: 'Des constructeurs mis en concurrence', text: 'Cimco compare pour vous les offres de constructeurs sélectionnés, à cahier des charges égal.' },
+  { title: 'Un CCMI sécurisé', text: 'Prix ferme, délais contractuels et garantie de livraison : votre contrat est vérifié avant signature.' },
+  { title: 'Du terrain aux clés', text: 'Recherche du terrain, plans, permis, financement et chantier : un seul interlocuteur du début à la fin.' },
+  { title: 'Temps gagné, budget maîtrisé', text: 'Vous évitez les démarches en double et gardez une vision claire du coût global du projet.' },
+  { title: 'Indépendant depuis 2009', text: 'Un courtier basé à Vourles, qui connaît les communes et les constructeurs de la région.' },
+]
+
 export function buildSections(c, page, dvf, neighbors, photo = null) {
   const a = c.annonce
   const dvfLine = (agg, what) => ({
     value: `${fmtEur(agg.prix_m2_moyen)} / m²`,
-    note: `${what}, ${agg.nb_transactions} vente${agg.nb_transactions > 1 ? 's' : ''}, ${agg.periode}`,
+    note: `${what}, ${plural(agg.nb_transactions, 'vente')}, ${agg.periode}`,
   })
 
   // Les cartes dont la donnée est absente sont masquées
   const figures = []
-  if (c.population) figures.push({ label: 'Population', value: `${fmtNum(c.population)} habitants`, note: 'Source : geo.api.gouv.fr' })
-  if (dvf?.terrain) figures.push({ label: 'Prix moyen des terrains à bâtir', ...dvfLine(dvf.terrain, 'Terrain à bâtir') })
-  if (dvf?.maison) figures.push({ label: 'Prix moyen des maisons', ...dvfLine(dvf.maison, 'Maisons, terrain inclus, par m² habitable') })
+  if (c.population) figures.push({ label: 'Population', value: `${fmtNum(c.population)} habitants`, note: 'Dernier recensement' })
+  if (dvf?.terrain) figures.push({ label: 'Prix moyen des terrains à bâtir', ...dvfLine(dvf.terrain, 'Moyenne communale') })
+  if (dvf?.maison) figures.push({ label: 'Prix moyen des maisons', ...dvfLine(dvf.maison, 'Terrain inclus, par m² habitable') })
   if (!dvf?.terrain && !dvf?.maison && dvf?.repere) {
-    figures.push({
-      label: 'Prix immobilier moyen',
-      value: `${fmtEur(dvf.repere.prix_m2_moyen)} / m²`,
-      note: `Source : ${dvf.repere.source}, ${dvf.repere.periode}`,
-    })
+    figures.push({ label: 'Prix immobilier moyen', value: `${fmtEur(dvf.repere.prix_m2_moyen)} / m²`, note: dvf.repere.periode })
   }
-  if (a) figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Projet de maison de ${a.maison_m2} m²` })
+  if (a) figures.push({ label: 'Budget projet Cimco', value: fmtEur(a.budget), note: `Maison de ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''}` })
+
+  const sources = sourcesOf(c, dvf)
+  const figuresNote = sources.length ? `Sources : ${sources.join(' ; ')}. Prix DVF : moyennes par commune.` : ''
 
   const listings = (a ? [c, ...neighbors] : neighbors).map((x, i) => ({
     name: x.name,
     here: !!a && i === 0,
-    ref: x.annonce.ref,
     url: x.annonce.url || LISTINGS_URL,
-    title: `Projet maison ${x.annonce.maison_m2} m²${x.annonce.terrain_m2 ? ` + terrain ${fmtNum(x.annonce.terrain_m2)} m²` : ''} à ${x.name}`,
+    title: `Maison ${x.annonce.maison_m2} m²${x.annonce.terrain_m2 ? ` sur terrain de ${fmtNum(x.annonce.terrain_m2)} m²` : ''}`,
+    place: x.name,
     budget: fmtEur(x.annonce.budget),
   }))
 
-  const breakdown = []
-  if (a?.terrain_m2 && dvf?.terrain) {
-    breakdown.push({ label: `Terrain de ${fmtNum(a.terrain_m2)} m² (estimation : surface de l'annonce × prix moyen DVF)`, value: fmtEur(a.terrain_m2 * dvf.terrain.prix_m2_moyen) })
-  }
-  if (a) breakdown.push({ label: `Projet Cimco (maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''})`, value: fmtEur(a.budget) })
-
-  const annonceTxt = !a ? '' : `Cimco propose par exemple un projet de maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}`
-  const withAnnonce = (txt) => (a ? `${txt} À ${c.name}, ${annonceTxt}.` : txt)
-  const faq = [
-    dvf?.terrain
-      ? {
-          q: `Combien coûte un terrain à ${c.name} ?`,
-          a: `Le prix moyen constaté est de ${fmtEur(dvf.terrain.prix_m2_moyen)} le m², sur ${dvf.terrain.nb_transactions} vente${dvf.terrain.nb_transactions > 1 ? 's' : ''} de terrains à bâtir (${dvf.terrain.periode}, source : ${dvf.source}).`,
-        }
-      : {
-          q: `Quel budget prévoir pour construire à ${c.name} ?`,
-          a: dvf?.maison
-            ? withAnnonce(`Les maisons se vendent en moyenne ${fmtEur(dvf.maison.prix_m2_moyen)} le m² habitable, terrain inclus (${dvf.maison.nb_transactions} vente${dvf.maison.nb_transactions > 1 ? 's' : ''}, ${dvf.maison.periode}, source : ${dvf.source}).`)
-            : dvf?.repere
-              ? withAnnonce(`Le prix immobilier moyen est de ${fmtEur(dvf.repere.prix_m2_moyen)} le m² (source : ${dvf.repere.source}, ${dvf.repere.periode}).`)
-              : a
-                ? `À ${c.name}, ${annonceTxt}.`
-                : `Cimco vous aide à chiffrer votre projet de construction à ${c.name}, en fonction du terrain trouvé.`,
-        },
-    a
-      ? {
-          q: `Quelle annonce Cimco est disponible à ${c.name} ?`,
-          a: `À ${c.name}, Cimco propose par exemple un projet de maison de ${a.maison_m2} m²${a.terrain_m2 ? ` sur un terrain de ${fmtNum(a.terrain_m2)} m²` : ''} au budget de ${fmtEur(a.budget)}.`,
-        }
-      : {
-          q: `Cimco peut-il m'aider à trouver un terrain à ${c.name} et alentours ?`,
-          a: `Oui. Même sans annonce publiée à ${c.name} en ce moment, Cimco accompagne les recherches de terrain sur le secteur et vous présente des projets à proximité.`,
-        },
-    {
-      q: `Cimco accompagne-t-il les projets à ${c.name} ?`,
-      a: a
-        ? `Oui. Cimco accompagne les projets de construction en Auvergne-Rhône-Alpes, et a une annonce active en ${c.depName}, à ${c.name}.`
-        : `Oui. Cimco accompagne les projets de construction en Auvergne-Rhône-Alpes, y compris à ${c.name} et alentours.`,
-    },
+  // Structure d'un budget global (postes, sans montant estimé)
+  const breakdown = [
+    { label: 'Terrain', value: 'Prix d\'achat + frais de notaire' },
+    { label: 'Maison', value: 'Prix ferme au CCMI, garanties incluses' },
+    { label: 'Viabilisation et raccordements', value: 'Eau, électricité, assainissement, télécoms' },
+    { label: 'Frais annexes', value: 'Étude de sol, taxe d\'aménagement, assurance dommages-ouvrage' },
   ]
+
+  const faq = Array.isArray(page.faq) && page.faq.length ? page.faq : templateFaq(c, dvf)
 
   const image = photo
     ? {
@@ -140,36 +144,45 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
   return {
     h1: page.h1,
     image,
+    badges: [`${c.depName} (${c.dep})`, c.cp, ...(a ? [plural(c.nbAnnonces, 'projet Cimco')] : [])],
+    heroCta: a ? 'Étudier ce projet avec un conseiller' : 'Lancer ma recherche de terrain',
     intro: page.intro,
     figuresTitle: `${c.name} en chiffres`,
     figures,
-    localTitle: a ? `Annonces Cimco à ${c.name} et alentours` : `Projets Cimco à proximité de ${c.name}`,
+    figuresNote,
+    localTitle: a ? `Construire à ${c.name} et alentours` : `Construire à ${c.name} : projets à proximité`,
     local: page.local,
+    listingsNote: 'Annonces publiées sur cimco.fr, sous réserve de disponibilité.',
     listings,
-    budgetTitle: 'Budget terrain et maison',
+    budgetTitle: `Votre budget pour faire construire à ${c.name}`,
     budget: page.budget,
     breakdown,
+    budgetNote: sources.some((x) => x.startsWith('prix')) ? `Source des prix moyens : ${sources.filter((x) => x.startsWith('prix')).join(' ; ').replace(/^prix moyens?, /, '')}.` : '',
+    midCtaTitle: `Un projet à ${c.name} ?`,
+    midCta: 'Parler de mon budget à un conseiller',
     whyTitle: 'Pourquoi passer par un courtier en construction comme Cimco ?',
-    why: 'Cimco est un courtier en construction de maisons individuelles indépendant.',
-    whyPoints: ['Courtier indépendant depuis 2009', 'Basé à Vourles', 'Accompagnement en Auvergne-Rhône-Alpes'],
+    why: `Faire construire est souvent le projet d'une vie. Cimco se place à vos côtés, et non du côté d'un constructeur, pour sécuriser chaque décision, de ${c.name} à l'ensemble de l'Auvergne-Rhône-Alpes.`,
+    whyPoints: WHY_POINTS,
     faqTitle: `Questions fréquentes sur la construction à ${c.name}`,
     faq,
-    ctaTitle: a ? 'Demander à être rappelé' : `Être alerté des prochains terrains à ${c.name}`,
-    ctaNote: 'Aperçu de démonstration : à remplacer par le module formulaire HubSpot en production.',
+    ctaTitle: a ? `Être rappelé pour un projet à ${c.name}` : `Être alerté des prochains terrains à ${c.name}`,
+    ctaText: 'Un conseiller Cimco vous rappelle pour faire le point sur votre projet, sans engagement.',
+    ctaComment: 'Formulaire de démonstration : à remplacer par le module formulaire HubSpot en production.',
   }
 }
 
 export function sectionsText(s) {
   return [
-    s.h1, ...(s.image ? [s.image.alt, s.image.credit].filter(Boolean) : []), s.intro, s.figuresTitle,
-    ...s.figures.flatMap((f) => [f.label, f.value, f.note]),
+    s.h1, ...(s.image ? [s.image.alt, s.image.credit].filter(Boolean) : []), ...s.badges, s.heroCta, s.intro, s.figuresTitle,
+    ...s.figures.flatMap((f) => [f.label, f.value, f.note]), s.figuresNote,
     s.localTitle, s.local,
-    ...s.listings.flatMap((l) => [l.title, l.budget, `Réf. ${l.ref}`, 'Voir sur cimco.fr →']),
+    ...s.listings.flatMap((l) => [l.title, l.place, l.budget, 'Voir le projet']), s.listingsNote,
     s.budgetTitle, s.budget,
-    ...s.breakdown.flatMap((b) => [b.label, b.value]),
-    s.whyTitle, s.why, ...s.whyPoints,
+    ...s.breakdown.flatMap((b) => [b.label, b.value]), s.budgetNote,
+    s.midCtaTitle, s.midCta,
+    s.whyTitle, s.why, ...s.whyPoints.flatMap((p) => [p.title, p.text]),
     s.faqTitle, ...s.faq.flatMap((f) => [f.q, f.a]),
-    s.ctaTitle, s.ctaNote,
+    s.ctaTitle, s.ctaText,
   ].join(' ')
 }
 
@@ -208,138 +221,118 @@ const CREDIT_CSS = `.cimco-local .cimco-photo{position:relative}
 
 const STYLE = `<style>
 /* Charte relevée sur cimco.fr (fond #fbfaf8, encre #1a1a18, accent #8fabb9 / #4a6a78) ; si le thème charge déjà Manrope et Poppins, elles s'appliquent d'elles-mêmes */
-.cimco-local{--cimco-primary:#4a6a78;--cimco-accent:#8fabb9;--cimco-dark:#1a1a18;--cimco-bg:#fbfaf8;--cimco-alt:#f4f3ef;--cimco-tint:#cfe3ec;--cimco-line:#1a1a1812;color:var(--cimco-dark);background:var(--cimco-bg);font:16px/1.6 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif}
+.cimco-local{--cimco-primary:#4a6a78;--cimco-accent:#8fabb9;--cimco-dark:#1a1a18;--cimco-muted:#57534c;--cimco-bg:#fbfaf8;--cimco-alt:#f4f3ef;--cimco-tint:#cfe3ec;--cimco-line:#1a1a1814;--cimco-shadow:0 1px 2px rgba(26,26,24,.04),0 8px 24px rgba(26,26,24,.06);color:var(--cimco-dark);background:var(--cimco-bg);font:16px/1.7 "Poppins",system-ui,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 .cimco-local *{box-sizing:border-box}
-.cimco-local h1,.cimco-local h2,.cimco-local h3{font-family:"Manrope",system-ui,-apple-system,sans-serif;letter-spacing:-.01em}
-.cimco-local h1{font-size:2.25rem;line-height:1.15;margin:0 0 .75rem}
-.cimco-local h2{font-size:1.5rem;line-height:1.25;margin:0 0 1rem}
-.cimco-local h2::before{content:"";display:block;width:2.5rem;height:3px;border-radius:3px;background:var(--cimco-accent);margin-bottom:.7rem}
-.cimco-local p{margin:0 0 1rem}
-.cimco-local .cl-band{padding:3rem 1.5rem}
-.cimco-local .cl-inner{max-width:960px;margin:0 auto}
-.cimco-local .cl-band--dark{background:var(--cimco-dark);color:#fff}
-.cimco-local .cl-band--dark p{color:var(--cimco-tint)}
+.cimco-local h1,.cimco-local h2,.cimco-local h3{font-family:"Manrope",system-ui,-apple-system,sans-serif;letter-spacing:-.02em;color:inherit}
+.cimco-local h1{font-size:clamp(2rem,4.5vw,2.9rem);line-height:1.1;font-weight:800;margin:0 0 1rem}
+.cimco-local h2{font-size:clamp(1.4rem,3vw,1.85rem);line-height:1.2;font-weight:800;margin:0 0 1rem}
+.cimco-local h2::before{content:"";display:block;width:2.5rem;height:3px;border-radius:3px;background:var(--cimco-accent);margin-bottom:.8rem}
+.cimco-local h3{font-size:1.05rem;line-height:1.35;margin:0 0 .35rem}
+.cimco-local p{margin:0 0 1rem;max-width:70ch}
+.cimco-local .cl-band{padding:3.5rem 1.25rem}
+.cimco-local .cl-inner{max-width:1040px;margin:0 auto}
 .cimco-local .cl-band--alt{background:var(--cimco-alt)}
 .cimco-local .cl-band--accent{background:var(--cimco-primary);color:#fff}
+.cimco-local .cl-band--accent p{color:rgba(255,255,255,.88)}
 .cimco-local .cl-band--accent h2::before{background:var(--cimco-tint)}
 .cimco-local .cl-band--soft{background:var(--cimco-tint)}
-.cimco-local .cl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
-.cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:24px;padding:1.25rem;background:#fff}
-.cimco-local a.cl-card{display:block;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s,transform .15s}
-.cimco-local a.cl-card:hover{border-color:var(--cimco-primary);box-shadow:0 10px 28px rgba(26,26,24,.12);transform:translateY(-2px)}
-.cimco-local .cl-more{font-size:.75rem;color:#57534c;margin-top:.25rem}
-.cimco-local .cl-card.is-here{border-color:var(--cimco-primary);box-shadow:inset 0 0 0 1px var(--cimco-primary)}
-.cimco-local .cl-label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:#6b665e}
-.cimco-local .cl-value{font-family:"Manrope",system-ui,sans-serif;font-size:1.4rem;font-weight:800;color:var(--cimco-primary)}
-.cimco-local .cl-ref{font-size:.75rem;color:#6b665e;margin-top:.5rem}
-.cimco-local .cl-figure{margin:1.5rem 0 0}
-.cimco-local .cl-figure img{display:block;width:100%;height:auto;max-height:420px;object-fit:cover;border-radius:24px}
+.cimco-local .cl-lead{font-size:1.08rem;color:var(--cimco-muted)}
+.cimco-local .cl-hero{display:grid;gap:2rem;align-items:center}
+.cimco-local .cl-badges{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1.1rem;padding:0;list-style:none}
+.cimco-local .cl-badges li{font-size:.78rem;font-weight:600;letter-spacing:.02em;color:var(--cimco-primary);background:#fff;border:1px solid var(--cimco-line);border-radius:999px;padding:.3rem .8rem}
+.cimco-local .cl-btn{display:inline-block;border:0;border-radius:999px;padding:.9rem 1.6rem;font:inherit;font-weight:700;line-height:1.2;color:#fff;background:var(--cimco-primary);text-decoration:none;cursor:pointer;box-shadow:0 6px 18px rgba(74,106,120,.28);transition:filter .15s,transform .15s}
+.cimco-local .cl-btn:hover{filter:brightness(.93);transform:translateY(-1px)}
+.cimco-local .cl-link{font-weight:700;color:var(--cimco-primary);text-decoration:none;border-bottom:2px solid var(--cimco-accent)}
+.cimco-local .cl-link:hover{border-color:var(--cimco-primary)}
+.cimco-local .cl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem;margin-top:1.5rem}
+.cimco-local .cl-card{border:1px solid var(--cimco-line);border-radius:20px;padding:1.35rem;background:#fff;box-shadow:var(--cimco-shadow)}
+.cimco-local a.cl-card{display:flex;flex-direction:column;gap:.25rem;color:inherit;text-decoration:none;transition:border-color .15s,box-shadow .15s,transform .15s}
+.cimco-local a.cl-card:hover{border-color:var(--cimco-primary);box-shadow:0 12px 32px rgba(26,26,24,.12);transform:translateY(-2px)}
+.cimco-local .cl-card.is-here{border-color:var(--cimco-primary);box-shadow:inset 0 0 0 1px var(--cimco-primary),var(--cimco-shadow)}
+.cimco-local .cl-place{font-size:.78rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--cimco-primary)}
+.cimco-local .cl-more{font-size:.85rem;font-weight:600;color:var(--cimco-primary);margin-top:.5rem}
+.cimco-local .cl-label{font-size:.75rem;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:#6b665e}
+.cimco-local .cl-value{font-family:"Manrope",system-ui,sans-serif;font-size:1.5rem;font-weight:800;line-height:1.25;color:var(--cimco-primary);margin:.2rem 0}
+.cimco-local .cl-figure{margin:0;border-radius:24px;overflow:hidden;box-shadow:0 18px 40px rgba(26,26,24,.14)}
+.cimco-local .cl-figure img{display:block;width:100%;height:auto;aspect-ratio:4/3;object-fit:cover}
 ${CREDIT_CSS}
-.cimco-local .cl-note{font-size:.8rem;color:#6b665e}
-.cimco-local ul.cl-list{list-style:none;margin:1rem 0 0;padding:0;background:#fff;border:1px solid var(--cimco-line);border-radius:24px;overflow:hidden}
-.cimco-local ul.cl-list li{padding:.85rem 1.25rem;border-top:1px solid var(--cimco-line)}
+.cimco-local .cl-note{font-size:.78rem;line-height:1.5;color:#6b665e;margin:1.25rem 0 0}
+.cimco-local .cl-band--accent .cl-note{color:rgba(255,255,255,.7)}
+.cimco-local ul.cl-list{list-style:none;margin:1.5rem 0 0;padding:0;background:#fff;border:1px solid var(--cimco-line);border-radius:20px;overflow:hidden;box-shadow:var(--cimco-shadow)}
+.cimco-local ul.cl-list li{display:flex;flex-wrap:wrap;justify-content:space-between;gap:.25rem 1rem;padding:.95rem 1.35rem;border-top:1px solid var(--cimco-line)}
 .cimco-local ul.cl-list li:first-child{border-top:0}
-.cimco-local ul.cl-points{list-style:none;margin:1rem 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem}
-.cimco-local ul.cl-points li{background:rgba(255,255,255,.14);border-radius:16px;padding:.9rem 1.1rem;font-weight:600}
-.cimco-local details{background:#fff;border:1px solid var(--cimco-line);border-radius:20px;padding:1rem 1.25rem;margin-bottom:.6rem}
-.cimco-local summary{cursor:pointer;font-weight:600}
-.cimco-local details p{margin:.6rem 0 0;color:#57534c}
-.cimco-local .cl-form{display:grid;grid-template-columns:1fr;gap:.75rem}
-.cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:14px;padding:.7rem .9rem;font:inherit;background:#fff}
+.cimco-local ul.cl-list span{color:var(--cimco-muted)}
+.cimco-local .cl-mid{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:1rem;margin-top:2rem;padding:1.25rem 1.5rem;border-radius:20px;background:var(--cimco-alt)}
+.cimco-local .cl-mid p{margin:0;font-weight:600}
+.cimco-local ul.cl-points{list-style:none;margin:1.5rem 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+.cimco-local ul.cl-points li{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:1.1rem 1.25rem}
+.cimco-local ul.cl-points strong{display:block;font-family:"Manrope",system-ui,sans-serif;margin-bottom:.3rem;color:#fff}
+.cimco-local ul.cl-points span{font-size:.92rem;color:rgba(255,255,255,.85)}
+.cimco-local details{background:#fff;border:1px solid var(--cimco-line);border-radius:18px;padding:1.05rem 1.35rem;margin-bottom:.7rem;box-shadow:var(--cimco-shadow)}
+.cimco-local summary{cursor:pointer;font-weight:600;line-height:1.45}
+.cimco-local details p{margin:.7rem 0 0;color:var(--cimco-muted)}
+.cimco-local .cl-form{display:grid;grid-template-columns:1fr;gap:.75rem;margin-top:1.25rem;max-width:640px}
+.cimco-local .cl-form input{width:100%;border:1px solid var(--cimco-line);border-radius:14px;padding:.8rem 1rem;font:inherit;background:#fff}
 .cimco-local .cl-form input:focus{outline:2px solid var(--cimco-primary);outline-offset:1px}
-.cimco-local .cl-form .cl-full{grid-column:1/-1}
-.cimco-local .cl-form button{grid-column:1/-1;border:0;border-radius:999px;padding:.85rem 1rem;font:inherit;font-weight:700;color:#fff;background:var(--cimco-primary);cursor:pointer}
-.cimco-local .cl-form button:hover{filter:brightness(.92)}
-.cimco-local .cl-demo{font-size:.75rem;color:#57534c;margin:.75rem 0 0}
+.cimco-local .cl-form .cl-full,.cimco-local .cl-form .cl-btn{grid-column:1/-1}
 @media(min-width:600px){.cimco-local .cl-form{grid-template-columns:1fr 1fr}}
+@media(min-width:768px){.cimco-local .cl-band{padding:4.5rem 2rem}.cimco-local .cl-hero.has-photo{grid-template-columns:1.05fr .95fr;gap:3rem}}
 </style>`
 
 export function pageToHtml(s, mode = 'raw') {
   const standalone = mode === 'standalone'
-  const figures = standalone
-    ? `<div class="cl-grid">\n${s.figures.map((f) => `    <div class="cl-card"><div class="cl-label">${esc(f.label)}</div><div class="cl-value">${esc(f.value)}</div><div class="cl-note">${esc(f.note)}</div></div>`).join('\n')}\n  </div>`
-    : `<ul>\n${s.figures.map((f) => `    <li><strong>${esc(f.label)} :</strong> ${esc(f.value)} (${esc(f.note)})</li>`).join('\n')}\n  </ul>`
+  const note = (t) => (t ? `\n    <p class="cl-note">${esc(t)}</p>` : '')
+  const cta = (label, cls = 'cl-btn') => `<a class="${cls}" href="#contact-cimco">${esc(label)}</a>`
 
-  const listings = standalone
-    ? `<div class="cl-grid">\n${s.listings.map((l) => `    <a class="cl-card${l.here ? ' is-here' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><div><strong>${esc(l.title)}</strong></div><div class="cl-value">${esc(l.budget)}</div><div class="cl-ref">Réf. ${esc(l.ref)}</div><div class="cl-more">Voir sur cimco.fr →</div></a>`).join('\n')}\n  </div>`
-    : `<ul>\n${s.listings.map((l) => `    <li><a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><strong>${esc(l.title)}</strong></a> : ${esc(l.budget)} <small>(Réf. ${esc(l.ref)})</small> <a href="${esc(l.url)}" target="_blank" rel="noopener noreferrer">Voir sur cimco.fr →</a></li>`).join('\n')}\n  </ul>`
+  const badges = `<ul class="cl-badges">${s.badges.map((b) => `<li>${esc(b)}</li>`).join('')}</ul>`
 
-  const faq = standalone
-    ? s.faq.map((f) => `  <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>`).join('\n')
-    : s.faq.map((f) => `  <h3>${esc(f.q)}</h3>\n  <p>${esc(f.a)}</p>`).join('\n')
+  const figures = `<div class="cl-grid">\n${s.figures.map((f) => `      <div class="cl-card"><div class="cl-label">${esc(f.label)}</div><div class="cl-value">${esc(f.value)}</div><div class="cl-note" style="margin:0">${esc(f.note)}</div></div>`).join('\n')}\n    </div>`
+
+  const listings = `<div class="cl-grid">\n${s.listings.map((l) => `      <a class="cl-card${l.here ? ' is-here' : ''}" href="${esc(l.url)}" target="_blank" rel="noopener noreferrer"><span class="cl-place">${esc(l.place)}</span><strong>${esc(l.title)}</strong><span class="cl-value">${esc(l.budget)}</span><span class="cl-more">Voir le projet →</span></a>`).join('\n')}\n    </div>`
+
+  const breakdown = `<ul class="cl-list">\n${s.breakdown.map((b) => `      <li><strong>${esc(b.label)}</strong><span>${esc(b.value)}</span></li>`).join('\n')}\n    </ul>`
+
+  const whyList = `<ul class="cl-points">\n${s.whyPoints.map((p) => `      <li><strong>${esc(p.title)}</strong><span>${esc(p.text)}</span></li>`).join('\n')}\n    </ul>`
+
+  const faq = s.faq.map((f) => (standalone ? `    <details><summary>${esc(f.q)}</summary><p>${esc(f.a)}</p></details>` : `    <h3>${esc(f.q)}</h3>\n    <p>${esc(f.a)}</p>`)).join('\n')
 
   const figure = s.image
     ? `
-  <figure class="cimco-photo${standalone ? ' cl-figure' : ''}">
-    <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" ${s.image.width ? `width="${s.image.width}" height="${s.image.height}" ` : ''}loading="lazy">${
-      s.image.credit ? `\n    <span class="cimco-credit" tabindex="0" role="note" aria-label="Crédit photo">?<span class="cimco-credit-tip">${esc(s.image.credit)}</span></span>` : ''
-    }
-  </figure>`
-    : ''
-  // Sans CSS dans le thème, l'export brut embarque uniquement le style du badge (et seulement s'il y a un crédit)
-  const creditStyle = !standalone && s.image?.credit ? `<style>\n${CREDIT_CSS}\n</style>\n` : ''
-
-  const breakdown = s.breakdown.length
-    ? `  <ul${standalone ? ' class="cl-list"' : ''}>\n${s.breakdown.map((b) => `    <li>${esc(b.label)} : <strong>${esc(b.value)}</strong></li>`).join('\n')}\n  </ul>`
+      <figure class="cimco-photo cl-figure">
+        <img src="${esc(s.image.src)}" alt="${esc(s.image.alt)}" ${s.image.width ? `width="${s.image.width}" height="${s.image.height}" ` : ''}loading="eager">${
+          s.image.credit ? `\n        <span class="cimco-credit" tabindex="0" role="note" aria-label="Crédit photo">?<span class="cimco-credit-tip">${esc(s.image.credit)}</span></span>` : ''
+        }
+      </figure>`
     : ''
 
-  const whyList = standalone
-    ? `<ul class="cl-points">\n${s.whyPoints.map((p) => `      <li>${esc(p)}</li>`).join('\n')}\n    </ul>`
-    : `<ul>\n${s.whyPoints.map((p) => `    <li>${esc(p)}</li>`).join('\n')}\n  </ul>`
+  const form = `<!-- ${s.ctaComment.replace(/--/g, '-')} -->
+    <form class="cl-form" onsubmit="return false;">
+      <input type="text" name="nom" placeholder="Nom" aria-label="Nom" autocomplete="name">
+      <input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone" autocomplete="tel">
+      <input class="cl-full" type="email" name="email" placeholder="E-mail" aria-label="E-mail" autocomplete="email">
+      <button class="cl-btn" type="submit">Demander à être rappelé</button>
+    </form>`
 
-  const form = standalone
-    ? `<form class="cl-form" onsubmit="return false;">
-      <input type="text" name="nom" placeholder="Nom" aria-label="Nom">
-      <input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone">
-      <input class="cl-full" type="email" name="email" placeholder="E-mail" aria-label="E-mail">
-      <button type="submit">Demander à être rappelé</button>
-    </form>
-    <p class="cl-demo">${esc(s.ctaNote)}</p>`
-    : `<form onsubmit="return false;">
-      <p><input type="text" name="nom" placeholder="Nom" aria-label="Nom"></p>
-      <p><input type="tel" name="telephone" placeholder="Téléphone" aria-label="Téléphone"></p>
-      <p><input type="email" name="email" placeholder="E-mail" aria-label="E-mail"></p>
-      <p><button type="submit">Demander à être rappelé</button></p>
-    </form>
-    <p><small>${esc(s.ctaNote)}</small></p>`
+  const band = (mod, inner, id) => `  <section class="cl-band${mod ? ` cl-band--${mod}` : ''}"${id ? ` id="${id}"` : ''}><div class="cl-inner">\n${inner}\n  </div></section>`
 
-  const band = (mod, inner) => `  <section class="cl-band${mod ? ` cl-band--${mod}` : ''}"><div class="cl-inner">\n${inner}\n  </div></section>`
-
-  if (standalone) {
-    const body = `<div class="cimco-local">
-${band('dark', `    <h1>${esc(s.h1)}</h1>\n    <p>${esc(s.intro)}</p>${figure}`)}
-${s.figures.length ? band('', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}`) + '\n' : ''}${band('alt', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}`)}
-${band('', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n${breakdown}`)}
-${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    ${whyList}`)}
-${band('alt', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
-${band('soft', `    <h2>${esc(s.ctaTitle)}</h2>\n    ${form}`)}
-</div>`
-    return `${STYLE}\n${body}`
-  }
+  const hero = `    <div class="cl-hero${s.image ? ' has-photo' : ''}">
+      <div>
+        ${badges}
+        <h1>${esc(s.h1)}</h1>
+        <p class="cl-lead">${esc(s.intro)}</p>
+        ${cta(s.heroCta)}
+      </div>${figure}
+    </div>`
 
   const body = `<div class="cimco-local">
-  <h1>${esc(s.h1)}</h1>${figure}
-  <p>${esc(s.intro)}</p>
-
-${s.figures.length ? `  <h2>${esc(s.figuresTitle)}</h2>\n  ${figures}\n\n` : ''}  <h2>${esc(s.localTitle)}</h2>
-  <p>${esc(s.local)}</p>
-  ${listings}
-
-  <h2>${esc(s.budgetTitle)}</h2>
-  <p>${esc(s.budget)}</p>
-${breakdown}
-
-  <h2>${esc(s.whyTitle)}</h2>
-  <p>${esc(s.why)}</p>
-  ${whyList}
-
-  <h2>${esc(s.faqTitle)}</h2>
-${faq}
-
-  <div>
-    <h2>${esc(s.ctaTitle)}</h2>
-    ${form}
-  </div>
+${band('', hero)}
+${s.figures.length ? band('alt', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}${note(s.figuresNote)}`) + '\n' : ''}${band('', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}${note(s.listingsNote)}`)}
+${band('alt', `    <h2>${esc(s.budgetTitle)}</h2>\n    <p>${esc(s.budget)}</p>\n    ${breakdown}${note(s.budgetNote)}\n    <div class="cl-mid"><p>${esc(s.midCtaTitle)}</p>${cta(s.midCta, 'cl-link')}</div>`)}
+${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n    ${whyList}`)}
+${band('', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
+${band('soft', `    <h2>${esc(s.ctaTitle)}</h2>\n    <p>${esc(s.ctaText)}</p>\n    ${form}`, 'contact-cimco')}
 </div>`
-  return `${creditStyle}${body}`
+  if (standalone) return `${STYLE}\n${body}`
+  // Export brut : hérite du thème, n'embarque que le style du badge de crédit photo s'il y en a un
+  return `${s.image?.credit ? `<style>\n${CREDIT_CSS}\n</style>\n` : ''}${body}`
 }

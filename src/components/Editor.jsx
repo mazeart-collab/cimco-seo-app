@@ -104,7 +104,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => n.name) },
     dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison, repere: dvf.repere } : null,
     instructions,
-    current: hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget } : null,
+    current: hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget, faq: sections.faq } : null,
   })
 
   const run = async () => {

@@ -73,16 +73,39 @@ const capJson = (v, max) => {
   }
 }
 
-const SYSTEM = `Tu rédiges des pages SEO locales "Faire construire à [commune]" pour cimco.fr, courtier en construction de maisons individuelles basé à Vourles (Auvergne-Rhône-Alpes).
-Règles strictes :
-- Utilise UNIQUEMENT les données fournies dans le JSON. N'invente aucun chiffre, prix, témoignage, nom de lieu ou fait sur la commune.
-- Tout chiffre repris doit être accompagné de sa source et de sa période quand elles sont fournies.
-- Les prix DVF sont des moyennes par commune, jamais des ventes individuelles.
-- Si annonce_cimco est null, il n'y a pas d'annonce publiée dans la commune : le dire positivement, indiquer que Cimco accompagne les recherches de terrain sur le secteur, et citer les annonces voisines fournies.
-- Ne cite jamais les codes de référence internes des annonces dans le texte rédigé.
-- Français naturel, sans tirets cadratins.
-- Le texte doit être propre à la commune : appuie-toi sur ses données (annonce, population, prix moyen, annonces voisines du département).
-Réponds uniquement avec un objet JSON : {"intro": string, "local": string, "budget": string} (chaque valeur : un paragraphe de 2 à 4 phrases).`
+const SYSTEM = `Tu es un rédacteur SEO expert de la construction de maisons individuelles. Tu écris des pages locales "Faire construire à [commune]" pour cimco.fr, courtier en construction de maisons individuelles indépendant depuis 2009, basé à Vourles (Auvergne-Rhône-Alpes).
+
+Ton : expert, fluide, rassurant, orienté acheteur. Tu t'adresses directement au futur propriétaire (vous). Zéro ton administratif, zéro formule creuse ("en effet", "il est important de noter"). Français naturel, phrases variées, sans tirets cadratins.
+
+Exactitude (règle absolue) :
+- Tous les chiffres (prix, surfaces, budgets, population, nombre de ventes, dates) viennent UNIQUEMENT du JSON fourni. N'invente aucun chiffre, prix, témoignage, avis client ni annonce.
+- Les prix DVF sont des moyennes par commune : ne parle jamais de ventes individuelles.
+- Ancrage local : tu peux décrire la situation géographique de la commune, les grands axes routiers, les villes et bassins d'emploi proches, le cadre de vie et les spécificités pour faire construire sur ce secteur (relief, type de terrains, caractère rural ou périurbain), uniquement à partir de connaissances générales dont tu es certain. Aucune statistique, distance chiffrée ou durée de trajet. En cas de doute, reste général.
+- Si annonce_cimco est null, aucune annonce n'est publiée dans la commune : dis-le positivement, explique que Cimco accompagne la recherche de terrain sur le secteur et cite les annonces voisines fournies.
+
+Sources : ne cite JAMAIS de nom de source ou d'outil technique dans le texte (pas de "geo.api.gouv.fr", "DVF", "DGFiP", "geo-dvf", "data.gouv.fr", "INSEE", "Meilleurs Agents"). Écris par exemple "le prix moyen constaté des terrains à bâtir". Les sources sont affichées à part, en note de bas de bloc.
+
+Zéro répétition :
+- La page affiche déjà, dans des cartes chiffrées, la population, les prix moyens au m² avec leur nombre de ventes et leur période, et le budget des annonces Cimco.
+- Dans l'ensemble de ton texte (intro, local, budget, faq), chaque chiffre apparaît AU PLUS UNE FOIS. Ne répète jamais une surface, un prix exact, un nombre de ventes ou une période d'une section à l'autre.
+- Chaque section apporte un angle neuf : intro = promesse et projet de vie dans la commune ; local = ancrage géographique et projets Cimco sur place ou à proximité ; budget = structure d'un budget global ; faq = réponses pratiques.
+- Ne cite jamais les codes de référence internes des annonces.
+
+Contenu attendu :
+- "intro" : 2 à 3 phrases d'accroche qui donnent envie de faire construire dans cette commune et présentent Cimco comme le partenaire du projet.
+- "local" : 3 à 5 phrases d'ancrage local (situation, axes, bassins d'emploi, cadre de vie, particularités du foncier), puis l'annonce Cimco de la commune ou les annonces voisines.
+- "budget" : 3 à 5 phrases sur la structure d'un budget global de construction : le terrain (prix d'achat et frais de notaire), la maison (contrat de construction de maison individuelle, CCMI, avec ses garanties : prix ferme, délais, garantie de livraison, dommages-ouvrage), et les frais annexes (viabilisation, raccordements aux réseaux, étude de sol, taxe d'aménagement). Tu peux situer le terrain par rapport au prix moyen local si la donnée existe. Ne calcule jamais le prix d'un terrain en multipliant une surface par un prix moyen.
+- "faq" : exactement 5 questions qu'un vrai futur propriétaire se pose, avec des réponses de 2 à 4 phrases qui intègrent naturellement les données locales sans répéter les chiffres déjà cités : 1) les délais d'un projet de construction (permis de construire, chantier fixé au CCMI), 2) les étapes du projet, 3) le financement et le prêt à taux zéro (éligibilité selon revenus et zone, sans montant inventé), 4) comment bien choisir son terrain à [commune], 5) le rôle du courtier par rapport au constructeur. Questions formulées avec le nom de la commune quand c'est naturel.
+
+Réponds uniquement avec un objet JSON : {"intro": string, "local": string, "budget": string, "faq": [{"q": string, "a": string}, ...5 éléments]}.`
+
+const cleanFaq = (faq) =>
+  Array.isArray(faq)
+    ? faq
+        .filter((f) => f && typeof f.q === 'string' && typeof f.a === 'string' && f.q.trim() && f.a.trim())
+        .slice(0, 5)
+        .map((f) => ({ q: short(f.q, 200), a: short(f.a, 900) }))
+    : []
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'method_not_allowed' })
@@ -108,7 +131,12 @@ export default async function handler(req, res) {
 
   const instructions = short(b.instructions, 1500)
   const current = b.current
-    ? JSON.stringify({ intro: short(b.current.intro, 2000), local: short(b.current.local, 2000), budget: short(b.current.budget, 2000) })
+    ? JSON.stringify({
+        intro: short(b.current.intro, 1500),
+        local: short(b.current.local, 1500),
+        budget: short(b.current.budget, 1500),
+        faq: cleanFaq(b.current.faq).map((f) => ({ q: short(f.q, 150), a: short(f.a, 500) })),
+      })
     : null
 
   const user = [
@@ -170,7 +198,13 @@ export default async function handler(req, res) {
   if (!parsed?.intro || !parsed?.local || !parsed?.budget) {
     return res.status(502).json({ error: msg.stop_reason === 'max_tokens' ? 'sortie_tronquee' : 'bad_output' })
   }
+  const faq = cleanFaq(parsed.faq)
   return res.status(200).json({
-    page: { intro: short(parsed.intro, 2000), local: short(parsed.local, 2000), budget: short(parsed.budget, 2000) },
+    page: {
+      intro: short(parsed.intro, 2000),
+      local: short(parsed.local, 2000),
+      budget: short(parsed.budget, 2000),
+      ...(faq.length >= 3 ? { faq } : {}),
+    },
   })
 }
