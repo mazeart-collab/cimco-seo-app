@@ -16,7 +16,7 @@ export default function Banner({ next, geoState, onCreate }) {
     ['Score SEO', next.score + ' / 100'],
   ]
   return (
-    <section className="overflow-hidden rounded-3xl bg-[#1a1a18] p-5 text-white shadow-sm">
+    <section data-tour="banner" className="overflow-hidden rounded-3xl bg-[#1a1a18] p-5 text-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-indigo-300">

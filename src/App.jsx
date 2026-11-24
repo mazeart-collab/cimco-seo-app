@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { ListOrdered, PenSquare } from 'lucide-react'
+import { ListOrdered, PenSquare, HelpCircle } from 'lucide-react'
 import { buildCommunes, SEED_TREATED, seoBreakdown, seoLevel } from './lib/data'
 import { enrich, loadGeoCache } from './lib/geo'
 import { cachedDvf } from './lib/api'
@@ -8,6 +8,7 @@ import Banner from './components/Banner'
 import Queue from './components/Queue'
 import Editor from './components/Editor'
 import SitePreview from './components/SitePreview'
+import { IntroScreen, startTour, isOnboardingDone, markOnboardingDone } from './components/Onboarding'
 
 const STATUS_KEY = 'cimco.status.v1'
 const PAGES_KEY = 'cimco.pages.v1'
@@ -46,6 +47,17 @@ export default function App() {
   const [sim0, setSim0] = useState(() => load(SIM_KEY, {}))
   const [images, setImages] = useState(() => load(IMAGES_KEY, {}))
   const [dvfTick, setDvfTick] = useState(0)
+  // Onboarding : présentation plein écran à la première visite, puis tour guidé
+  const [intro, setIntro] = useState(() => !location.hash.startsWith('#/apercu/') && !isOnboardingDone())
+  const skipOnboarding = useCallback(() => {
+    markOnboardingDone()
+    setIntro(false)
+  }, [])
+  const beginTour = () => {
+    setIntro(false)
+    // Laisse l'écran de présentation se fermer avant de mesurer les éléments
+    requestAnimationFrame(() => startTour(setTab))
+  }
 
   useEffect(() => {
     let alive = true
@@ -187,7 +199,8 @@ export default function App() {
               <p className="text-xs text-slate-500">Pages « Faire construire à [commune] »</p>
             </div>
           </div>
-          <nav className="flex gap-1 rounded-lg bg-slate-100 p-1">
+          <div className="flex items-center gap-2">
+          <nav data-tour="tabs" className="flex gap-1 rounded-lg bg-slate-100 p-1">
             {[
               ['queue', 'File de priorité', ListOrdered],
               ['editor', 'Éditeur de page', PenSquare],
@@ -204,8 +217,19 @@ export default function App() {
               </button>
             ))}
           </nav>
+          <button
+            data-tour="guide"
+            onClick={() => setIntro(true)}
+            title="Revoir la présentation et le tour guidé"
+            className="flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-800"
+          >
+            <HelpCircle size={16} />
+            <span className="hidden sm:inline">Guide</span>
+          </button>
+          </div>
         </div>
       </header>
+      {intro && <IntroScreen onStart={beginTour} onSkip={skipOnboarding} />}
 
       <main className="mx-auto max-w-7xl space-y-5 px-4 py-5">
         <Banner next={nextCommune} geoState={geoState} onCreate={() => nextCommune && open(nextCommune.name)} />

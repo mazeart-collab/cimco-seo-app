@@ -56,7 +56,7 @@ export default function Queue({ rows, geoState, onOpen }) {
 
   return (
     <section className="rounded-2xl border border-slate-200 bg-white shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
+      <div data-tour="queue" className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 p-4">
         <div>
           <h2 className="font-semibold">File de priorité</h2>
           <p className="text-xs text-slate-500">Score sur 100 : annonces Cimco actives (30 points) + population de la commune (70 points, geo.api.gouv.fr). Cliquez sur ? pour le détail.</p>

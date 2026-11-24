@@ -156,7 +156,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     <div className="grid gap-5 lg:grid-cols-2">
       {/* Colonne gauche */}
       <div className="space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section data-tour="commune" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between gap-3">
             <select
               value={c.name}
@@ -251,7 +251,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
         </label>
         )}
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section data-tour="photo" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <h3 className="text-sm font-semibold">Illustration de la commune</h3>
           <p className="text-xs text-slate-500">Photos libres de Wikipédia et Wikimedia Commons. Cliquez sur une image pour l'inclure dans la page.</p>
           {photoState === 'loading' && (
@@ -331,7 +331,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section data-tour="consignes" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <label htmlFor="consignes" className="text-sm font-semibold">
             Consignes à l'IA
           </label>
@@ -344,6 +344,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
             className="mt-2 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           />
           <button
+            data-tour="generate"
             onClick={run}
             disabled={busy}
             className="mt-3 flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
@@ -362,7 +363,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
           )}
         </section>
 
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section data-tour="similarity" className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">Similarité (indice de Jaccard)</h3>
             <span className={`text-sm font-semibold tabular-nums ${risky ? 'text-red-600' : 'text-emerald-600'}`}>{similarity.compared ? pct + ' %' : 'n.d.'}</span>
@@ -388,7 +389,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
           )}
         </section>
 
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div data-tour="export" className="grid gap-2 sm:grid-cols-2">
           {[
             ['raw', 'Copier HTML brut (HubSpot Rich Text)', 'Sans CSS, hérite du thème de cimco.fr'],
             ['standalone', 'Copier HTML autonome (avec CSS)', 'Bloc <style> isolé, pour un module HTML personnalisé'],
@@ -409,7 +410,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
       </div>
 
       {/* Colonne droite */}
-      <div className="lg:sticky lg:top-4 lg:self-start">
+      <div data-tour="preview" className="lg:sticky lg:top-4 lg:self-start">
         <PreviewPane name={c.name} s={sections} />
       </div>
     </div>
