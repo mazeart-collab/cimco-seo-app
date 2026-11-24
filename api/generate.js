@@ -98,7 +98,11 @@ Contenu attendu :
 - "budget" : 3 à 5 phrases sur la structure d'un budget global de construction : le terrain (prix d'achat et frais de notaire), la maison (contrat de construction de maison individuelle, CCMI, avec ses garanties : prix ferme, délais, garantie de livraison, dommages-ouvrage), et les frais annexes (viabilisation, raccordements aux réseaux, étude de sol, taxe d'aménagement). Tu peux situer le terrain par rapport au prix moyen local si la donnée existe. Ne calcule jamais le prix d'un terrain en multipliant une surface par un prix moyen.
 - "faq" : exactement 5 questions qu'un vrai futur propriétaire se pose, avec des réponses de 2 à 4 phrases qui intègrent naturellement les données locales sans répéter les chiffres déjà cités : 1) les délais d'un projet de construction (permis de construire, chantier fixé au CCMI), 2) les étapes du projet, 3) le financement et le prêt à taux zéro (éligibilité selon revenus et zone, sans montant inventé), 4) comment bien choisir son terrain à [commune], 5) le rôle du courtier par rapport au constructeur. Questions formulées avec le nom de la commune quand c'est naturel.
 
-Réponds uniquement avec un objet JSON : {"intro": string, "local": string, "budget": string, "faq": [{"q": string, "a": string}, ...5 éléments]}.`
+- "metaTitle" : balise title de 50 à 60 caractères, espaces compris. Elle contient la requête locale "Faire construire à [commune]" puis un élément différenciant propre à la commune ou à Cimco (département, projet disponible, cadre de vie...). Pas de formule passe-partout identique d'une commune à l'autre.
+- "metaDescription" : 140 à 155 caractères, espaces compris. Incitative au clic, elle intègre un repère local concret tiré des données (prix moyen, projet Cimco ou bassin de vie) et se termine par un appel à l'action. Rédaction unique pour cette commune.
+- Si "metas_autres_communes" est fourni, ne reprends ni leur structure ni leurs tournures : ta formulation doit s'en distinguer nettement.
+
+Réponds uniquement avec un objet JSON : {"metaTitle": string, "metaDescription": string, "intro": string, "local": string, "budget": string, "faq": [{"q": string, "a": string}, ...5 éléments]}.`
 
 const cleanFaq = (faq) =>
   Array.isArray(faq)
@@ -130,12 +134,20 @@ export default async function handler(req, res) {
   }
   if (!data.commune) return res.status(400).json({ error: 'commune_manquante' })
 
+  // Métas déjà produites pour d'autres communes : transmises pour que Claude s'en démarque
+  const otherMetas = Array.isArray(b.otherMetas)
+    ? b.otherMetas.slice(0, 6).map((m) => ({ titre: short(m?.metaTitle, 80), description: short(m?.metaDescription, 180) })).filter((m) => m.titre || m.description)
+    : []
+  if (otherMetas.length) data.metas_autres_communes = otherMetas
+
   const instructions = short(b.instructions, 1500)
   const current = b.current
     ? JSON.stringify({
         intro: short(b.current.intro, 1500),
         local: short(b.current.local, 1500),
         budget: short(b.current.budget, 1500),
+        metaTitle: short(b.current.metaTitle, 80),
+        metaDescription: short(b.current.metaDescription, 180),
         faq: cleanFaq(b.current.faq).map((f) => ({ q: short(f.q, 150), a: short(f.a, 500) })),
       })
     : null
@@ -206,6 +218,8 @@ export default async function handler(req, res) {
       local: short(parsed.local, 2000),
       budget: short(parsed.budget, 2000),
       ...(faq.length >= 3 ? { faq } : {}),
+      ...(typeof parsed.metaTitle === 'string' && parsed.metaTitle.trim() ? { metaTitle: short(parsed.metaTitle.trim(), 80) } : {}),
+      ...(typeof parsed.metaDescription === 'string' && parsed.metaDescription.trim() ? { metaDescription: short(parsed.metaDescription.trim(), 200) } : {}),
     },
   })
 }

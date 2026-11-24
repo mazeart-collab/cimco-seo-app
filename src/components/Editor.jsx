@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Wand2, Zap, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff, Download } from 'lucide-react'
 import PreviewPane from './PreviewPane'
+import SeoMeta from './SeoMeta'
 import { fmtEur, fmtNum } from '../lib/data'
 import { fetchDvf, generate, cachedDvf, fetchPhotos, cachedPhotos } from '../lib/api'
 import { optimizeImage, download, seoFileName, formatKo } from '../lib/optimize'
-import { jaccard, creditOf, sectionsText, pageToHtml } from '../lib/page'
+import { jaccard, creditOf, sectionsText, pageToHtml, metaText } from '../lib/page'
 
 const THRESHOLD = 0.4
+// Titre + description : seuil plus haut, les textes sont courts et partagent la requête « Faire construire à »
+const META_THRESHOLD = 0.5
 
 export default function Editor({ commune: c, all, sectionsFor, hasOverride, neighbors, onSelect, onSavePage, onStatus, onDvf, selectedPhoto, onPhoto, simulated, canSimulate, onSimulate, pageKey }) {
   const code = c.insee || c.info?.code
@@ -100,12 +103,28 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     return { ...best, compared: others.length }
   }, [sections, all, c.name, sectionsFor])
 
+  // Unicité des métadonnées par rapport aux autres pages traitées (nom de commune masqué)
+  const others = useMemo(() => all.filter((x) => x.status === 'traitee' && x.name !== c.name), [all, c.name])
+  const metaSimilarity = useMemo(() => {
+    const mine = metaText(sections, c)
+    let best = { score: 0, name: null }
+    for (const o of others) {
+      const s = jaccard(mine, metaText(sectionsFor(o), o))
+      if (s > best.score) best = { score: s, name: o.name }
+    }
+    return { ...best, compared: others.length }
+  }, [sections, others, sectionsFor, c])
+
   // quick : génération rapide, consignes par défaut uniquement (ni consigne ni texte actuel envoyés)
   const payload = (quick = false) => ({
     commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => `${n.name} (${n.depName})`) },
     dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison, repere: dvf.repere } : null,
     instructions: quick ? '' : instructions,
-    current: !quick && hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget, faq: sections.faq } : null,
+    otherMetas: others.slice(0, 6).map((o) => {
+      const s = sectionsFor(o)
+      return { metaTitle: s.metaTitle, metaDescription: s.metaDescription }
+    }),
+    current: !quick && hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget, faq: sections.faq, metaTitle: sections.metaTitle, metaDescription: sections.metaDescription } : null,
   })
 
   const run = async (quick = false) => {
@@ -425,6 +444,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
 
       {/* Colonne droite */}
       <div data-tour="preview" className="lg:sticky lg:top-4 lg:self-start">
+        <SeoMeta commune={c.name} title={sections.metaTitle} description={sections.metaDescription} similarity={metaSimilarity} threshold={META_THRESHOLD} />
         <PreviewPane name={c.name} s={sections} />
       </div>
     </div>

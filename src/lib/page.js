@@ -61,6 +61,45 @@ function templateFaq(c, dvf) {
   ]
 }
 
+// ---------- Métadonnées SEO par défaut (données réelles, sans IA) ----------
+
+// Garde la variante la plus complète qui tient dans la limite
+const fit = (variants, max) => variants.filter((v) => v.length <= max).sort((x, y) => y.length - x.length)[0] || variants[variants.length - 1].slice(0, max)
+
+export function templateMetas(c, dvf) {
+  const a = c.annonce
+  const metaTitle = fit(
+    [
+      ...(a ? [`Faire construire à ${c.name} : maison ${a.maison_m2} m² | Cimco`, `Faire construire à ${c.name} : projet Cimco`] : []),
+      `Faire construire à ${c.name} ${inDep(c)} | Cimco`,
+      `Faire construire à ${c.name} (${c.cp}) | Cimco`,
+      `Faire construire à ${c.name}`,
+    ],
+    60,
+  )
+  const repere = a
+    ? `Projet maison ${a.maison_m2} m²${a.terrain_m2 ? ' + terrain' : ''} à ${fmtEur(a.budget)} à ${c.name}.`
+    : dvf?.terrain
+      ? `Terrain à bâtir à ${c.name} : ${fmtEur(dvf.terrain.prix_m2_moyen)}/m² en moyenne (DVF).`
+      : `Construire à ${c.name} (${c.cp}) ${inDep(c)}.`
+  const metaDescription = fit(
+    [
+      `${repere} Cimco compare les constructeurs et sécurise votre CCMI. Demandez à être rappelé.`,
+      `${repere} Un courtier compare les constructeurs pour vous. Demandez à être rappelé.`,
+      `${repere} Cimco vous accompagne. Demandez à être rappelé.`,
+      repere,
+    ],
+    155,
+  )
+  return { metaTitle, metaDescription }
+}
+
+// Similarité des métas : le nom, le code postal et le département sont masqués pour détecter une formule générique
+const maskCommune = (text, c) =>
+  [c.name, c.cp, c.depName].filter(Boolean).reduce((t, w) => t.split(w).join(' commune '), String(text || ''))
+
+export const metaText = (s, c) => maskCommune(`${s.metaTitle} ${s.metaDescription}`, c)
+
 export function buildTemplatePage(c, info, dvf, neighbors) {
   const a = c.annonce
   const intro = `Faire construire à ${c.name}, c'est choisir une maison pensée pour votre famille, dans un cadre que vous aimez. Cimco, courtier en construction de maisons individuelles ${inDep(c)}, vous accompagne de la recherche du terrain jusqu'à la remise des clés.`
@@ -81,7 +120,7 @@ export function buildTemplatePage(c, info, dvf, neighbors) {
 
   return {
     h1: `Faire construire à ${c.name}`,
-    meta: `Faire construire une maison à ${c.name} (${c.depName}) avec Cimco : terrains et projets disponibles, budget, prix moyens et accompagnement d'un courtier.`,
+    ...templateMetas(c, dvf),
     intro,
     local,
     budget,
@@ -150,6 +189,8 @@ export function buildSections(c, page, dvf, neighbors, photo = null) {
 
   return {
     h1: page.h1,
+    metaTitle: page.metaTitle || templateMetas(c, dvf).metaTitle,
+    metaDescription: page.metaDescription || templateMetas(c, dvf).metaDescription,
     image,
     badges: [`${c.depName} (${c.dep})`, c.cp, ...(a ? [plural(c.nbAnnonces, 'projet Cimco')] : [])],
     heroCta: a ? `Étudier mon projet à ${c.name}` : 'Lancer ma recherche de terrain',
@@ -330,6 +371,8 @@ export function pageToHtml(s, mode = 'raw') {
       </div>${figure}
     </div>`
 
+  // Métadonnées en commentaire en tête du code, pour les reporter dans les paramètres de la page HubSpot
+  const metaComment = `<!--\n  Meta Title : ${String(s.metaTitle).replace(/--/g, '-')}\n  Meta Description : ${String(s.metaDescription).replace(/--/g, '-')}\n-->\n`
   const body = `<div class="cimco-local">
 ${band('', hero)}
 ${s.figures.length ? band('alt', `    <h2>${esc(s.figuresTitle)}</h2>\n    ${figures}${note(s.figuresNote)}`) + '\n' : ''}${band('', `    <h2>${esc(s.localTitle)}</h2>\n    <p>${esc(s.local)}</p>\n    ${listings}${note(s.listingsNote)}`)}
@@ -338,7 +381,7 @@ ${band('accent', `    <h2>${esc(s.whyTitle)}</h2>\n    <p>${esc(s.why)}</p>\n   
 ${band('', `    <h2>${esc(s.faqTitle)}</h2>\n${faq}`)}
 ${band('soft', `    <h2>${esc(s.ctaTitle)}</h2>\n    <p>${esc(s.ctaText)}</p>\n    ${form}`, 'contact-cimco')}
 </div>`
-  if (standalone) return `${STYLE}\n${body}`
+  if (standalone) return `${metaComment}${STYLE}\n${body}`
   // Export brut : hérite du thème, n'embarque que le style du badge de crédit photo s'il y en a un
-  return `${s.image?.credit ? `<style>\n${CREDIT_CSS}\n</style>\n` : ''}${body}`
+  return `${metaComment}${s.image?.credit ? `<style>\n${CREDIT_CSS}\n</style>\n` : ''}${body}`
 }
