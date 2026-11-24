@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Wand2, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff, Download } from 'lucide-react'
+import { Wand2, Zap, Copy, Check, Loader2, Users, Database, Home, AlertTriangle, Info, ImageOff, Download } from 'lucide-react'
 import PreviewPane from './PreviewPane'
 import { fmtEur, fmtNum } from '../lib/data'
 import { fetchDvf, generate, cachedDvf, fetchPhotos, cachedPhotos } from '../lib/api'
@@ -13,7 +13,7 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
   const [dvf, setDvf] = useState(() => (code ? cachedDvf(code) : null))
   const [dvfState, setDvfState] = useState(dvf ? 'ok' : code ? 'loading' : 'nocode')
   const [instructions, setInstructions] = useState('')
-  const [busy, setBusy] = useState(false)
+  const [busy, setBusy] = useState(false) // false | 'custom' | 'quick'
   const [notice, setNotice] = useState(null)
   const [copied, setCopied] = useState(null)
 
@@ -100,24 +100,28 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
     return { ...best, compared: others.length }
   }, [sections, all, c.name, sectionsFor])
 
-  const payload = () => ({
+  // quick : génération rapide, consignes par défaut uniquement (ni consigne ni texte actuel envoyés)
+  const payload = (quick = false) => ({
     commune: { name: c.name, cp: c.cp, depName: c.depName, population: c.population, annonce: c.annonce, neighbors: neighbors.map((n) => n.name) },
     dvf: dvf ? { source: dvf.source, terrain: dvf.terrain, maison: dvf.maison, repere: dvf.repere } : null,
-    instructions,
-    current: hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget, faq: sections.faq } : null,
+    instructions: quick ? '' : instructions,
+    current: !quick && hasOverride ? { intro: sections.intro, local: sections.local, budget: sections.budget, faq: sections.faq } : null,
   })
 
-  const run = async () => {
-    setBusy(true)
+  const run = async (quick = false) => {
+    setBusy(quick ? 'quick' : 'custom')
     setNotice(null)
-    const r = await generate(payload())
+    const r = await generate(payload(quick))
     if (r.page) {
+      // Garde la commune affichée : sinon l'éditeur passe à la commune recommandée suivante
+      onSelect(c.name)
       onSavePage(pageKey, r.page)
       onStatus(c.name, 'traitee')
       setNotice({ type: 'ok', text: 'Page générée et enregistrée.' })
     } else if (r.error) {
       setNotice({ type: 'warn', text: r.error })
     } else {
+      onSelect(c.name)
       onStatus(c.name, 'traitee')
       setNotice({
         type: 'info',
@@ -343,15 +347,25 @@ export default function Editor({ commune: c, all, sectionsFor, hasOverride, neig
             placeholder="Ex. : ton plus chaleureux, insister sur la proximité des services, intro plus courte…"
             className="mt-2 w-full rounded-lg border border-slate-200 p-3 text-sm outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
           />
-          <button
-            data-tour="generate"
-            onClick={run}
-            disabled={busy}
-            className="mt-3 flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {busy ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
-            Générer / Modifier
-          </button>
+          <div data-tour="generate" className="mt-3 flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => run(false)}
+              disabled={!!busy}
+              className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {busy === 'custom' ? <Loader2 size={16} className="animate-spin" /> : <Wand2 size={16} />}
+              {busy === 'custom' ? 'Génération…' : 'Générer / Modifier'}
+            </button>
+            <button
+              onClick={() => run(true)}
+              disabled={!!busy}
+              title="Génère la page avec les consignes par défaut, sans tenir compte du champ ci-dessus"
+              className="flex items-center gap-2 rounded-lg border border-indigo-200 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50 disabled:opacity-60"
+            >
+              {busy === 'quick' ? <Loader2 size={16} className="animate-spin" /> : <Zap size={16} />}
+              {busy === 'quick' ? 'Génération…' : 'Génération rapide'}
+            </button>
+          </div>
           {notice && (
             <p
               className={`mt-3 flex gap-2 rounded-lg p-3 text-xs ${
